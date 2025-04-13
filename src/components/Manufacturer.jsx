@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Input, Button, Textarea } from "@material-tailwind/react";
-import { PlusCircle, CheckCircle, Factory, ClipboardList, FlaskConical } from 'lucide-react';
+import { Input, Button, Textarea, Card, Typography } from "@material-tailwind/react";
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { PlusCircle, CheckCircle, Factory, ClipboardList, FlaskConical, Download, FileText } from 'lucide-react';
 
 function Manufacturer() {
   const [product, setProduct] = useState({
@@ -11,7 +12,7 @@ function Manufacturer() {
     datePeremption: '',
     nomFabricant: '',
     paysOrigine: '',
-    amm: '',
+    amm: null, // Changed to handle file object
     temperatureMax: '',
     temperatureMin: '',
     humiditeMax: '',
@@ -22,7 +23,7 @@ function Manufacturer() {
       fournisseur: '',
       degrePurete: '',
       quantiteParUnite: '',
-      certificatAnalyse: '',
+      certificatAnalyse: null, // Changed to handle file object
       dateReception: '',
       transport: ''
     }]
@@ -31,6 +32,23 @@ function Manufacturer() {
   const [activeTab, setActiveTab] = useState('add');
   const [successMessage, setSuccessMessage] = useState("");
   const [currentMaterialTab, setCurrentMaterialTab] = useState(0);
+  const [productionData, setProductionData] = useState([]);
+
+  // Sample data for charts
+  const quarterlyProductionData = [
+    { name: 'Q1', production: 12000 },
+    { name: 'Q2', production: 19000 },
+    { name: 'Q3', production: 15000 },
+    { name: 'Q4', production: 20000 },
+  ];
+
+  const qualityControlData = [
+    { name: 'Conforme', value: 95 },
+    { name: 'Non-conforme', value: 3 },
+    { name: 'En attente', value: 2 },
+  ];
+
+  const COLORS = ['#0088FE', '#FFBB28', '#FF8042'];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -51,6 +69,25 @@ function Manufacturer() {
     }));
   };
 
+  const handleAMMFileChange = (e) => {
+    const file = e.target.files[0];
+    setProduct(prev => ({
+      ...prev,
+      amm: file
+    }));
+  };
+
+  const handleCertificatAnalyseChange = (e, index) => {
+    const file = e.target.files[0];
+    const updatedMaterials = [...product.matieresPremieres];
+    updatedMaterials[index].certificatAnalyse = file;
+    
+    setProduct(prev => ({
+      ...prev,
+      matieresPremieres: updatedMaterials
+    }));
+  };
+
   const addMaterial = () => {
     setProduct(prev => ({
       ...prev,
@@ -62,7 +99,7 @@ function Manufacturer() {
           fournisseur: '',
           degrePurete: '',
           quantiteParUnite: '',
-          certificatAnalyse: '',
+          certificatAnalyse: null,
           dateReception: '',
           transport: ''
         }
@@ -87,7 +124,18 @@ function Manufacturer() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setSuccessMessage(`Production batch ${product.nomMedicament} recorded successfully!`);
+    
+    // Create production record
+    const newProduction = {
+      nomMedicament: product.nomMedicament,
+      dateFabrication: product.dateFabrication,
+      matieresPremieres: product.matieresPremieres.length,
+      amm: product.amm ? product.amm.name : 'Aucun',
+      certificats: product.matieresPremieres.map(m => m.certificatAnalyse ? m.certificatAnalyse.name : 'Aucun')
+    };
+    
+    setProductionData([...productionData, newProduction]);
+    setSuccessMessage(`Lot ${product.nomMedicament} enregistré avec succès!`);
     
     // Reset form
     setProduct({
@@ -98,7 +146,7 @@ function Manufacturer() {
       datePeremption: '',
       nomFabricant: '',
       paysOrigine: '',
-      amm: '',
+      amm: null,
       temperatureMax: '',
       temperatureMin: '',
       humiditeMax: '',
@@ -109,7 +157,7 @@ function Manufacturer() {
         fournisseur: '',
         degrePurete: '',
         quantiteParUnite: '',
-        certificatAnalyse: '',
+        certificatAnalyse: null,
         dateReception: '',
         transport: ''
       }]
@@ -118,6 +166,21 @@ function Manufacturer() {
     setTimeout(() => {
       setSuccessMessage("");
     }, 5000);
+  };
+
+  const downloadFile = (file) => {
+    if (!file) return;
+    
+    // In a real app, this would download the actual file
+    const blob = new Blob(["Simulated PDF content for " + file.name], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name || "document.pdf";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -266,14 +329,21 @@ function Manufacturer() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">AMM (Autorisation de Mise sur le Marché)*</label>
-                  <Input 
-                    size="lg"
-                    name="amm"
-                    value={product.amm}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                  />
+                  <div className="flex items-center">
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handleAMMFileChange}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      required
+                    />
+                    {product.amm && (
+                      <span className="ml-2 text-sm text-gray-600 flex items-center">
+                        <FileText className="h-4 w-4 mr-1" />
+                        {product.amm.name}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -418,16 +488,23 @@ function Manufacturer() {
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Certificat d'Analyse*</label>
-                        <Input 
-                          size="lg"
-                          name="certificatAnalyse"
-                          value={product.matieresPremieres[currentMaterialTab].certificatAnalyse}
-                          onChange={(e) => handleMaterialChange(e, currentMaterialTab)}
-                          required
-                          className="w-full"
-                        />
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Certificat d'Analyse (PDF)*</label>
+                        <div className="flex items-center">
+                          <input
+                            type="file"
+                            accept="application/pdf"
+                            onChange={(e) => handleCertificatAnalyseChange(e, currentMaterialTab)}
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            required
+                          />
+                          {product.matieresPremieres[currentMaterialTab].certificatAnalyse && (
+                            <span className="ml-2 text-sm text-gray-600 flex items-center">
+                              <FileText className="h-4 w-4 mr-1" />
+                              {product.matieresPremieres[currentMaterialTab].certificatAnalyse.name}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div>
@@ -482,9 +559,117 @@ function Manufacturer() {
           </div>
         ) : (
           /* Analytics View */
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Production Analytics</h3>
-            <p className="text-gray-600">This section would display production analytics if connected to the smart contract.</p>
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Quarterly Production Chart */}
+              <Card className="p-6">
+                <Typography variant="h5" color="blue-gray" className="mb-4">
+                  Production Trimestrielle
+                </Typography>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={quarterlyProductionData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="production" fill="#4f46e5" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+
+              {/* Quality Control Chart */}
+              <Card className="p-6">
+                <Typography variant="h5" color="blue-gray" className="mb-4">
+                  Contrôle Qualité
+                </Typography>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={qualityControlData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {qualityControlData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </div>
+            
+            {/* Production Records Table */}
+            <Card className="p-6">
+              <Typography variant="h5" color="blue-gray" className="mb-4">
+                Historique de Production
+              </Typography>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médicament</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Fabrication</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matières Premières</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AMM</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Certificats</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {productionData.map((item, index) => (
+                      <tr key={index}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.nomMedicament}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.dateFabrication}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.matieresPremieres}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <Button
+                            size="sm"
+                            variant="outlined"
+                            className="flex items-center gap-1"
+                            onClick={() => downloadFile({ name: item.amm })}
+                          >
+                            <Download className="h-4 w-4" />
+                            <span className="truncate max-w-xs">{item.amm}</span>
+                          </Button>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex flex-wrap gap-2">
+                            {item.certificats.map((cert, i) => (
+                              <Button
+                                key={i}
+                                size="sm"
+                                variant="outlined"
+                                className="flex items-center gap-1"
+                                onClick={() => downloadFile({ name: cert })}
+                              >
+                                <Download className="h-4 w-4" />
+                                <span className="truncate max-w-xs">{cert}</span>
+                              </Button>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {productionData.length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                          Aucune donnée de production disponible
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
           </div>
         )}
       </div>

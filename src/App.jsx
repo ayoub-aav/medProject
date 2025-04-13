@@ -6,6 +6,8 @@ import Manifactured from './components/Manifactured';
 import DistributorQRScanner from './components/DistributorQRScanner'; // Updated import
 import PharmacyQRScanner from './components/PharmacyQRScanner'; // New import
 import QrCodeGenerator from './components/QrCodeGenerator'; // Ensure you have this component
+import Pharmacy from './components/Pharmacy';
+
 
 function App() {
     const [medicamentId, setMedicamentId] = useState(''); // Store selected medicament ID
@@ -14,6 +16,8 @@ function App() {
         <Router>
             <div>
                 <Routes>
+                <Route path="/Pharmacy" element={<Pharmacy />} />
+
                     <Route path="/" element={<Login />} />
                     <Route path="/manifactured" element={<Manifactured />} />
                     {/*  Add a route for Distributor Scanner */}

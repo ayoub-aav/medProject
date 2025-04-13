@@ -263,7 +263,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -276,7 +277,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -337,7 +339,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -715,7 +718,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -783,7 +787,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -802,7 +807,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     }
   ],
   "metadata": "{\"compiler\":{\"version\":\"0.7.1+commit.f4a555be\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"medicamentId\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"lotId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"int8\",\"name\":\"temperatureActuelle\",\"type\":\"int8\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"humiditeActuelle\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"int8\",\"name\":\"temperatureMinRequise\",\"type\":\"int8\"},{\"indexed\":false,\"internalType\":\"int8\",\"name\":\"temperatureMaxRequise\",\"type\":\"int8\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"humiditeMinRequise\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"humiditeMaxRequise\",\"type\":\"uint8\"}],\"name\":\"AlerteConditionsNonConformes\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"medicamentId\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"int8\",\"name\":\"temperature\",\"type\":\"int8\"},{\"indexed\":false,\"internalType\":\"uint8\",\"name\":\"humidite\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"positionX\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"positionY\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"ConditionsMedicamentMisesAJour\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"lotId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"nomMedicament\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"LotCree\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"lotId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"nom\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"fournisseur\",\"type\":\"string\"}],\"name\":\"MatierePremiereAjoutee\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"medicamentId\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"lotId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"UniteMedicamentCreee\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_lotId\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"_nom\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_origine\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_fournisseur\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_degrePurete\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_quantiteParUnite\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_certificatAnalyse\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_dateReception\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_transport\",\"type\":\"string\"}],\"name\":\"ajouterMatierePremiere\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"nomMedicament\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"substanceActive\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"forme\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"dateFabrication\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"datePeremption\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"nomFabricant\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"paysOrigine\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"amm\",\"type\":\"string\"},{\"components\":[{\"internalType\":\"string\",\"name\":\"nom\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"origine\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"fournisseur\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"degrePurete\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"quantiteParUnite\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"certificatAnalyse\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"dateReception\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"transport\",\"type\":\"string\"}],\"internalType\":\"struct Medecin.MatierePremiere[]\",\"name\":\"matieresPremieresLot\",\"type\":\"tuple[]\"}],\"internalType\":\"struct Medecin.LotCreationParams\",\"name\":\"_params\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"int8\",\"name\":\"temperatureMax\",\"type\":\"int8\"},{\"internalType\":\"int8\",\"name\":\"temperatureMin\",\"type\":\"int8\"},{\"internalType\":\"uint8\",\"name\":\"humiditeMax\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"humiditeMin\",\"type\":\"uint8\"}],\"internalType\":\"struct Medecin.ConservationParams\",\"name\":\"_conservation\",\"type\":\"tuple\"}],\"name\":\"creerLotMedicament\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"medicamentId\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"lotId\",\"type\":\"uint256\"},{\"internalType\":\"int8\",\"name\":\"temperature\",\"type\":\"int8\"},{\"internalType\":\"uint8\",\"name\":\"humidite\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"positionX\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"positionY\",\"type\":\"string\"}],\"internalType\":\"struct Medecin.UniteCreationParams\",\"name\":\"_params\",\"type\":\"tuple\"}],\"name\":\"creerUniteMedicament\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"lots\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"lotId\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"nomMedicament\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"substanceActive\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"forme\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"dateFabrication\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"datePeremption\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"nomFabricant\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"paysOrigine\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"amm\",\"type\":\"string\"},{\"components\":[{\"internalType\":\"int8\",\"name\":\"temperatureMax\",\"type\":\"int8\"},{\"internalType\":\"int8\",\"name\":\"temperatureMin\",\"type\":\"int8\"},{\"internalType\":\"uint8\",\"name\":\"humiditeMax\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"humiditeMin\",\"type\":\"uint8\"}],\"internalType\":\"struct Medecin.Conservation\",\"name\":\"conditionsConservation\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nextLotId\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_lotId\",\"type\":\"uint256\"}],\"name\":\"obtenirDetailsLot\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"lotId\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"nomMedicament\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"substanceActive\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"forme\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"dateFabrication\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"datePeremption\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"nomFabricant\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"paysOrigine\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"amm\",\"type\":\"string\"},{\"components\":[{\"internalType\":\"int8\",\"name\":\"temperatureMax\",\"type\":\"int8\"},{\"internalType\":\"int8\",\"name\":\"temperatureMin\",\"type\":\"int8\"},{\"internalType\":\"uint8\",\"name\":\"humiditeMax\",\"type\":\"uint8\"},{\"internalType\":\"uint8\",\"name\":\"humiditeMin\",\"type\":\"uint8\"}],\"internalType\":\"struct Medecin.Conservation\",\"name\":\"conditionsConservation\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"string\",\"name\":\"nom\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"origine\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"fournisseur\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"degrePurete\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"quantiteParUnite\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"certificatAnalyse\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"dateReception\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"transport\",\"type\":\"string\"}],\"internalType\":\"struct Medecin.MatierePremiere[]\",\"name\":\"matieresPremieresLot\",\"type\":\"tuple[]\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"internalType\":\"struct Medecin.LotMedicament\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_medicamentId\",\"type\":\"string\"}],\"name\":\"obtenirUniteMedicament\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"medicamentId\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"lotId\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"int8\",\"name\":\"temperature\",\"type\":\"int8\"},{\"internalType\":\"uint8\",\"name\":\"humidite\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"positionX\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"positionY\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"internalType\":\"struct Medecin.ConditionsActuelles\",\"name\":\"conditionsActuelles\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"timestampCreation\",\"type\":\"uint256\"}],\"internalType\":\"struct Medecin.UniteMedicament\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"name\":\"unitesMedicament\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"medicamentId\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"lotId\",\"type\":\"uint256\"},{\"components\":[{\"internalType\":\"int8\",\"name\":\"temperature\",\"type\":\"int8\"},{\"internalType\":\"uint8\",\"name\":\"humidite\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"positionX\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"positionY\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"internalType\":\"struct Medecin.ConditionsActuelles\",\"name\":\"conditionsActuelles\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"timestampCreation\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"_medicamentId\",\"type\":\"string\"}],\"name\":\"verifierConditionsConformes\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/Medecin.sol\":\"Medecin\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/Medecin.sol\":{\"keccak256\":\"0x40fa0cabb6dda8835a4e703e7ef4d1aadaf12e7349ed6b308a837dced4da20b3\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://48dff85aec681d9ccb9a19b07d47381bba29fa82b0318e6b0299fa45897cb370\",\"dweb:/ipfs/QmPKSgf6iw5QuX2VmGC4ivShZsbVc8mb3idaX9zDxGpCSG\"]}},\"version\":1}",
@@ -16855,9 +16861,17 @@
     "name": "solc",
     "version": "0.7.1+commit.f4a555be.Emscripten.clang"
   },
-  "networks": {},
+  "networks": {
+    "5777": {
+      "events": {},
+      "links": {},
+      "address": "0xc9c4241Da853dA201c418480648813bD2d17D16A",
+      "transactionHash": "0x42a56c4f399615ad1698177688a669299a7e8b25093a4db14564a4ef8460015b"
+    }
+  },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2025-04-13T15:14:51.465Z",
+  "updatedAt": "2025-04-13T16:21:07.745Z",
+  "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
     "methods": {},

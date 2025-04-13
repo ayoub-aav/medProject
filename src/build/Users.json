@@ -109,7 +109,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -128,7 +129,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -177,7 +179,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -190,7 +193,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -219,7 +223,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     }
   ],
   "metadata": "{\"compiler\":{\"version\":\"0.7.1+commit.f4a555be\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"userAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"role\",\"type\":\"string\"}],\"name\":\"UserAdded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"userAddress\",\"type\":\"address\"}],\"name\":\"UserRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"userAddress\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"role\",\"type\":\"string\"}],\"name\":\"UserUpdated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"userAddress\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"role\",\"type\":\"string\"}],\"name\":\"addUser\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"userAddress\",\"type\":\"address\"}],\"name\":\"doesUserExist\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getAllUserAddresses\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"userAddress\",\"type\":\"address\"}],\"name\":\"getUser\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"role\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getUserByIndex\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"userAddress\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"role\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getUserCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"userAddress\",\"type\":\"address\"}],\"name\":\"removeUser\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"userAddress\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"role\",\"type\":\"string\"}],\"name\":\"updateUser\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"addUser(address,string,string)\":{\"details\":\"Add a new user to the contract\",\"params\":{\"name\":\"The name of the user\",\"role\":\"The role of the user\",\"userAddress\":\"The address of the user\"}},\"doesUserExist(address)\":{\"details\":\"Check if a user exists\",\"params\":{\"userAddress\":\"The address to check\"},\"returns\":{\"_0\":\"True if the user exists, false otherwise\"}},\"getAllUserAddresses()\":{\"details\":\"Get all user addresses\",\"returns\":{\"_0\":\"Array of all user addresses\"}},\"getUser(address)\":{\"details\":\"Get user information by address\",\"params\":{\"userAddress\":\"The address of the user to retrieve\"},\"returns\":{\"name\":\"User's name\",\"role\":\"User's role\"}},\"getUserByIndex(uint256)\":{\"details\":\"Get user by index in the array\",\"params\":{\"index\":\"The index of the user\"},\"returns\":{\"name\":\"The name of the user\",\"role\":\"The role of the user\",\"userAddress\":\"The address of the user\"}},\"getUserCount()\":{\"details\":\"Get the total number of users\",\"returns\":{\"_0\":\"The total number of users\"}},\"removeUser(address)\":{\"details\":\"Remove a user from the contract\",\"params\":{\"userAddress\":\"The address of the user to remove\"}},\"updateUser(address,string,string)\":{\"details\":\"Update an existing user's information\",\"params\":{\"name\":\"The new name of the user\",\"role\":\"The new role of the user\",\"userAddress\":\"The address of the user\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/Users.sol\":\"Users\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/Users.sol\":{\"keccak256\":\"0x847198a0db9070ba0d0db5bf19bc2099d46bff5f0c314c10faaae8a5d64d86c2\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://d55491063f9cc6217b1d9e7f2a44f3a5287c151f96071c0863270c5cb97eae35\",\"dweb:/ipfs/QmX62nBBNfQAQV8UWwceNKZuETxx2magQSjDbtbjegX1mA\"]}},\"version\":1}",
@@ -7763,12 +7768,13 @@
     "5777": {
       "events": {},
       "links": {},
-      "address": "0xBd115584ED02f0a177b4b5e7aFbf12F4E3Ed00a3",
-      "transactionHash": "0xfe7825de7e62788351e1b1d450f22c87fb67c1bbeb1693a88dbf61cf25e01842"
+      "address": "0x1Bd90389fC90Ce62Ba358E5cb6B445317209A191",
+      "transactionHash": "0xaddaa84afb00cda2e1a3bd17a40fb0c7479102d8891f900106e19bf5cf3632f4"
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2025-04-13T15:14:51.478Z",
+  "updatedAt": "2025-04-13T16:21:07.361Z",
+  "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
     "methods": {

@@ -19,5 +19,8 @@ export default defineConfig({
   },
   build: {
     target: 'esnext' // Helps avoid some eval-related issues
+  },
+  optimizeDeps: {
+    include: ['qr-scanner']
   }
 })

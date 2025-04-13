@@ -14,6 +14,7 @@
     "@truffle/contract": "^4.6.31",
     "flowbite-react": "^0.11.7",
     "lucide-react": "^0.487.0",
+    "qr-scanner": "^1.4.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.0",

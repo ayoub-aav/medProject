@@ -1,38 +1,41 @@
-import React, { useState } from 'react';
-import { Input, Button, Select, Option, Textarea } from "@material-tailwind/react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Button, Card, Typography } from "@material-tailwind/react";
 import { BarChart, PieChart, Bar, Pie, Cell, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
-import { Truck, Package, ClipboardList, CheckCircle, ChevronRight } from 'lucide-react';
+import { Truck, Package, ClipboardList, CheckCircle, ChevronRight, QrCode, Camera, CameraOff } from 'lucide-react';
+import QrScanner from 'qr-scanner';
+
+// Sample product data that would be retrieved from QR code scan
+const sampleProductData = {
+  productId: 'PROD-2023-001',
+  name: 'Paracetamol 500mg',
+  batchNumber: 'BATCH-2023-001',
+  quantity: '1000',
+  expiryDate: '2025-12-31',
+  manufacturer: 'PharmaFab Inc.',
+  manufacturingDate: '2023-01-15',
+  storageConditions: {
+    temperature: '15-25°C',
+    humidity: '≤60%'
+  },
+  ingredients: [
+    { name: 'Paracetamol', quantity: '500mg' },
+    { name: 'Starch', quantity: '20mg' },
+    { name: 'Povidone', quantity: '5mg' }
+  ]
+};
 
 function Distributor() {
-  const [shipment, setShipment] = useState({
-    shipmentId: '',
-    manufacturer: '',
-    products: [{
-      productId: '',
-      name: '',
-      batchNumber: '',
-      quantity: '',
-      expiryDate: ''
-    }],
-    origin: '',
-    destination: '',
-    shippingDate: '',
-    estimatedDelivery: '',
-    storageConditions: {
-      temperature: '',
-      humidity: ''
-    },
-    transporter: {
-      name: '',
-      license: '',
-      contact: ''
-    },
-    status: 'pending'
+  const [activeTab, setActiveTab] = useState('scan');
+  const [message, setMessage] = useState({ text: '', type: '' });
+  const [scannedProduct, setScannedProduct] = useState(null);
+  const [scanning, setScanning] = useState(false);
+  const [cameraState, setCameraState] = useState({
+    isActive: false,
+    error: null,
+    availableCameras: []
   });
-
-  const [activeTab, setActiveTab] = useState('ship');
-  const [successMessage, setSuccessMessage] = useState("");
-  const [currentProductTab, setCurrentProductTab] = useState(0);
+  const videoRef = useRef(null);
+  const qrScannerRef = useRef(null);
 
   // Sample data for charts
   const distributionData = [
@@ -50,446 +53,430 @@ function Distributor() {
     { name: 'Pending', value: 10 },
   ];
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setShipment(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleProductChange = (e, index) => {
-    const { name, value } = e.target;
-    const updatedProducts = [...shipment.products];
-    updatedProducts[index][name] = value;
-    setShipment(prev => ({
-      ...prev,
-      products: updatedProducts
-    }));
-  };
-
-  const handleStorageChange = (e) => {
-    const { name, value } = e.target;
-    setShipment(prev => ({
-      ...prev,
-      storageConditions: {
-        ...prev.storageConditions,
-        [name]: value
-      }
-    }));
-  };
-
-  const handleTransporterChange = (e) => {
-    const { name, value } = e.target;
-    setShipment(prev => ({
-      ...prev,
-      transporter: {
-        ...prev.transporter,
-        [name]: value
-      }
-    }));
-  };
-
-  const addProduct = () => {
-    setShipment(prev => ({
-      ...prev,
-      products: [
-        ...prev.products,
-        {
-          productId: '',
-          name: '',
-          batchNumber: '',
-          quantity: '',
-          expiryDate: ''
-        }
-      ]
-    }));
-    setCurrentProductTab(shipment.products.length);
-  };
-
-  const removeProduct = (index) => {
-    if (shipment.products.length <= 1) return;
-    
-    const updatedProducts = shipment.products.filter((_, i) => i !== index);
-    setShipment(prev => ({
-      ...prev,
-      products: updatedProducts
-    }));
-    
-    if (currentProductTab >= index) {
-      setCurrentProductTab(Math.max(0, currentProductTab - 1));
+  // Check camera availability
+  const checkCameraAvailability = async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter(device => device.kind === 'videoinput');
+      
+      setCameraState({
+        ...cameraState,
+        availableCameras: cameras,
+        error: cameras.length === 0 ? 'No cameras detected' : null
+      });
+    } catch (err) {
+      setCameraState({
+        ...cameraState,
+        error: 'Could not access camera devices'
+      });
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Shipment data:', shipment);
-    setSuccessMessage(`Shipment ${shipment.shipmentId} recorded successfully!`);
+  // Start scanning
+  const startScanning = async () => {
+    try {
+      // Verify camera access
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach(track => track.stop());
+
+      if (!videoRef.current) {
+        throw new Error('Video element not ready');
+      }
+
+      qrScannerRef.current = new QrScanner(
+        videoRef.current,
+        result => handleScanResult(result),
+        {
+          preferredCamera: 'environment',
+          highlightScanRegion: true,
+          maxScansPerSecond: 5,
+          returnDetailedScanResult: true
+        }
+      );
+
+      await qrScannerRef.current.start();
+      
+      setScanning(true);
+      setCameraState(prev => ({
+        ...prev,
+        isActive: true,
+        error: null
+      }));
+      setMessage({ text: 'Scanning... Point camera at QR code', type: 'info' });
+
+    } catch (err) {
+      let errorMessage = 'Scanner error';
+      if (err.name === 'NotAllowedError') {
+        errorMessage = 'Camera access denied. Please enable camera permissions.';
+      } else if (err.name === 'NotFoundError') {
+        errorMessage = 'No camera device found.';
+      } else {
+        errorMessage = `Scanner error: ${err.message}`;
+      }
+      
+      setCameraState(prev => ({
+        ...prev,
+        isActive: false,
+        error: errorMessage
+      }));
+      setMessage({ text: errorMessage, type: 'error' });
+      stopScanning();
+    }
+  };
+
+  // Stop scanning
+  const stopScanning = useCallback(() => {
+    if (qrScannerRef.current) {
+      qrScannerRef.current.stop();
+      qrScannerRef.current.destroy();
+      qrScannerRef.current = null;
+    }
+    setScanning(false);
+    setCameraState(prev => ({
+      ...prev,
+      isActive: false
+    }));
+  }, []);
+
+  // Handle scan results
+  const handleScanResult = useCallback((result) => {
+    stopScanning();
     
-    // Reset form
-    setShipment({
-      shipmentId: '',
-      manufacturer: '',
-      products: [{
-        productId: '',
-        name: '',
-        batchNumber: '',
-        quantity: '',
-        expiryDate: ''
-      }],
-      origin: '',
-      destination: '',
-      shippingDate: '',
-      estimatedDelivery: '',
-      storageConditions: {
-        temperature: '',
-        humidity: ''
-      },
-      transporter: {
-        name: '',
-        license: '',
-        contact: ''
-      },
-      status: 'pending'
-    });
-    
-    setTimeout(() => {
-      setSuccessMessage("");
-    }, 5000);
+    try {
+      const data = JSON.parse(result.data);
+      if (!data.productId || !data.name) {
+        throw new Error('Invalid product data format');
+      }
+
+      setScannedProduct(data);
+      setMessage({ 
+        text: `Scanned: ${data.name} (${data.productId})`, 
+        type: 'success' 
+      });
+
+      setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+    } catch (err) {
+      setMessage({ text: 'Invalid QR code format', type: 'error' });
+    }
+  }, [stopScanning]);
+
+  // Switch camera
+  const switchCamera = async () => {
+    if (qrScannerRef.current) {
+      try {
+        const cameras = await qrScannerRef.current.getCameras();
+        if (cameras.length > 1) {
+          const currentCamera = qrScannerRef.current.getActiveCamera();
+          const newCamera = cameras.find(cam => cam.id !== currentCamera?.id);
+          if (newCamera) {
+            await qrScannerRef.current.setCamera(newCamera);
+            setMessage({ text: 'Camera switched', type: 'info' });
+          }
+        } else {
+          setMessage({ text: 'No alternate camera found', type: 'warning' });
+        }
+      } catch (err) {
+        setMessage({ text: `Could not switch camera: ${err.message}`, type: 'error' });
+      }
+    }
+  };
+
+  // Simulate scan for demo
+  const simulateScan = useCallback(() => {
+    handleScanResult({ data: JSON.stringify(sampleProductData) });
+  }, [handleScanResult]);
+
+  // Clean up
+  useEffect(() => {
+    checkCameraAvailability();
+    return () => stopScanning();
+  }, [stopScanning]);
+
+  // Keyboard navigation for tabs
+  const handleKeyDown = (e, tab) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      setActiveTab(tab);
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-white via-blue-100 to-orange-200 p-4">
-      <div className="w-full max-w-7xl">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto">
         {/* Header with logo and title */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <div className="bg-blue-600 text-white p-3 rounded-lg mr-4">
               <Truck className="h-8 w-8" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-800">PharmaDistro</h1>
+            <h1 className="text-3xl font-bold text-gray-800">PharmaDistro</h1>
           </div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Distribution Management
-          </h2>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            {cameraState.isActive ? (
+              <>
+                <Camera className="h-5 w-5 text-green-500" />
+                <span>Camera Active</span>
+              </>
+            ) : (
+              <>
+                <CameraOff className="h-5 w-5 text-red-500" />
+                <span>Camera Inactive</span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
         <div className="flex border-b border-gray-200 mb-8">
-          <button
-            className={`py-2 px-4 font-medium ${activeTab === 'ship' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-            onClick={() => setActiveTab('ship')}
-          >
-            <div className="flex items-center">
-              <Package className="mr-2 h-5 w-5" />
-              <span>Manage Shipments</span>
-            </div>
-          </button>
-          <button
-            className={`py-2 px-4 font-medium ${activeTab === 'analytics' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-            onClick={() => setActiveTab('analytics')}
-          >
-            <div className="flex items-center">
-              <ClipboardList className="mr-2 h-5 w-5" />
-              <span>Distribution Analytics</span>
-            </div>
-          </button>
+          {['scan', 'analytics'].map((tab) => (
+            <button
+              key={tab}
+              className={`py-3 px-6 font-medium flex items-center ${
+                activeTab === tab 
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveTab(tab)}
+              onKeyDown={(e) => handleKeyDown(e, tab)}
+              role="tab"
+              aria-selected={activeTab === tab}
+              tabIndex={0}
+            >
+              {tab === 'scan' && <QrCode className="mr-2 h-5 w-5" />}
+              {tab === 'analytics' && <ClipboardList className="mr-2 h-5 w-5" />}
+              {tab === 'scan' && 'Scan Product'}
+              {tab === 'analytics' && 'Distribution Analytics'}
+            </button>
+          ))}
         </div>
 
-        {activeTab === 'ship' ? (
-          /* Shipment Management Form */
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200" style={{ boxShadow: '0 6px 24px rgba(0, 0, 0, 0.15)' }}>
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Shipment Details</h3>
-              
-              {successMessage && (
-                <div className="flex items-center space-x-2 bg-green-50 p-3 rounded-lg border border-green-100 text-green-700 animate-pulse">
-                  <CheckCircle className="h-5 w-5" />
-                  <span>{successMessage}</span>
-                </div>
+        {/* Status Message */}
+        {message.text && (
+          <div className={`mb-6 p-3 rounded-lg ${
+            message.type === 'error' ? 'bg-red-50 text-red-700' :
+            message.type === 'success' ? 'bg-green-50 text-green-700' :
+            'bg-blue-50 text-blue-700'
+          }`}>
+            <div className="flex items-center">
+              {message.type === 'error' ? (
+                <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              ) : message.type === 'success' ? (
+                <CheckCircle className="h-5 w-5 mr-2" />
+              ) : (
+                <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               )}
+              <span>{message.text}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Tab Content */}
+        {activeTab === 'scan' ? (
+          <Card className="p-6 rounded-xl shadow-sm">
+            <div className="space-y-8">
+              <Typography variant="h3" className="flex items-center mb-6">
+                <QrCode className="mr-2 h-6 w-6 text-blue-600" />
+                Product Scanner
+              </Typography>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Shipment ID</label>
-                  <Input 
-                    size="lg"
-                    name="shipmentId"
-                    value={shipment.shipmentId}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                    placeholder="e.g. SHIP-2023-001"
-                  />
-                </div>
+              {/* Scanner View */}
+              <div 
+                className="relative w-full aspect-video mb-6 bg-black rounded-lg overflow-hidden"
+                role="region"
+                aria-live="polite"
+                aria-label="QR Scanner View"
+              >
+                <video 
+                  ref={videoRef}
+                  className={`w-full h-full object-cover ${scanning ? 'block' : 'hidden'}`}
+                  playsInline
+                  muted
+                  aria-label="Camera preview"
+                />
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturer</label>
-                  <Input 
-                    size="lg"
-                    name="manufacturer"
-                    value={shipment.manufacturer}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                    placeholder="Manufacturer name"
-                  />
-                </div>
+                {!scanning && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-black bg-opacity-70">
+                    <QrCode className="h-24 w-24 opacity-50 mb-4" />
+                    <Typography className="text-lg opacity-75">
+                      {cameraState.error ? cameraState.error : 'Camera preview will appear when scanning'}
+                    </Typography>
+                  </div>
+                )}
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Origin</label>
-                  <Input 
-                    size="lg"
-                    name="origin"
-                    value={shipment.origin}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                    placeholder="Source location"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-                  <Input 
-                    size="lg"
-                    name="destination"
-                    value={shipment.destination}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                    placeholder="Destination location"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Shipping Date</label>
-                  <Input 
-                    type="date"
-                    size="lg"
-                    name="shippingDate"
-                    value={shipment.shippingDate}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Delivery</label>
-                  <Input 
-                    type="date"
-                    size="lg"
-                    name="estimatedDelivery"
-                    value={shipment.estimatedDelivery}
-                    onChange={handleInputChange}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-              
-              {/* Products Section */}
-              <div className="border-t border-gray-200 pt-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h4 className="text-xl font-semibold text-gray-800">Products in Shipment</h4>
-                  <button
-                    type="button"
-                    onClick={addProduct}
-                    className="text-sm bg-blue-50 text-blue-600 px-3 py-1 rounded-md hover:bg-blue-100"
-                  >
-                    + Add Product
-                  </button>
-                </div>
-                
-                {/* Product Tabs */}
-                <div className="flex overflow-x-auto mb-4 border-b border-gray-200">
-                  {shipment.products.map((_, index) => (
-                    <button
-                      key={index}
-                      className={`px-4 py-2 font-medium whitespace-nowrap ${currentProductTab === index ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                      onClick={() => setCurrentProductTab(index)}
-                    >
-                      Product {index + 1}
-                      {shipment.products.length > 1 && (
-                        <button 
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); removeProduct(index); }}
-                          className="ml-2 text-red-400 hover:text-red-600"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                
-                {/* Current Product Form */}
-                {shipment.products.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Product ID</label>
-                      <Input 
-                        size="lg"
-                        name="productId"
-                        value={shipment.products[currentProductTab].productId}
-                        onChange={(e) => handleProductChange(e, currentProductTab)}
-                        required
-                        className="w-full"
-                        placeholder="Unique product identifier"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-                      <Input 
-                        size="lg"
-                        name="name"
-                        value={shipment.products[currentProductTab].name}
-                        onChange={(e) => handleProductChange(e, currentProductTab)}
-                        required
-                        className="w-full"
-                        placeholder="e.g. Paracetamol 500mg"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Batch Number</label>
-                      <Input 
-                        size="lg"
-                        name="batchNumber"
-                        value={shipment.products[currentProductTab].batchNumber}
-                        onChange={(e) => handleProductChange(e, currentProductTab)}
-                        required
-                        className="w-full"
-                        placeholder="e.g. BATCH-2023-001"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-                      <Input 
-                        type="number"
-                        size="lg"
-                        name="quantity"
-                        value={shipment.products[currentProductTab].quantity}
-                        onChange={(e) => handleProductChange(e, currentProductTab)}
-                        required
-                        className="w-full"
-                        placeholder="Number of units"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                      <Input 
-                        type="date"
-                        size="lg"
-                        name="expiryDate"
-                        value={shipment.products[currentProductTab].expiryDate}
-                        onChange={(e) => handleProductChange(e, currentProductTab)}
-                        className="w-full"
-                      />
-                    </div>
+                {scanning && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="border-4 border-blue-400 border-dashed rounded-lg w-64 h-64 animate-pulse opacity-70"></div>
                   </div>
                 )}
               </div>
-              
-              {/* Storage Conditions */}
-              <div className="border-t border-gray-200 pt-6">
-                <h4 className="text-xl font-semibold text-gray-800 mb-6">Storage Conditions</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Temperature Requirements (°C)</label>
-                    <Input 
-                      size="lg"
-                      name="temperature"
-                      value={shipment.storageConditions.temperature}
-                      onChange={handleStorageChange}
-                      className="w-full"
-                      placeholder="e.g. 15-25"
-                    />
+
+              {/* Controls */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                {!scanning ? (
+                  <>
+                    <Button
+                      onClick={startScanning}
+                      className="flex-1 flex items-center justify-center gap-2 py-3"
+                      color="blue"
+                      disabled={!!cameraState.error}
+                    >
+                      <QrCode className="h-5 w-5" />
+                      Start Scanning
+                    </Button>
+                    <Button
+                      onClick={simulateScan}
+                      variant="outlined"
+                      className="flex-1 flex items-center justify-center py-3"
+                      color="blue"
+                    >
+                      Simulate Scan
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      onClick={stopScanning}
+                      className="flex-1 flex items-center justify-center py-3"
+                      color="red"
+                    >
+                      Stop Scanning
+                    </Button>
+                    {cameraState.availableCameras.length > 1 && (
+                      <Button
+                        onClick={switchCamera}
+                        variant="outlined"
+                        className="flex-1 flex items-center justify-center py-3"
+                        color="blue"
+                      >
+                        Switch Camera
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Scanned Product Details */}
+              {scannedProduct && (
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <div className="flex justify-between items-start mb-6">
+                    <h4 className="text-xl font-bold text-gray-800">Product Details</h4>
+                    <Button 
+                      variant="outlined" 
+                      onClick={() => setScannedProduct(null)}
+                      className="flex items-center"
+                    >
+                      <span>Scan Another</span>
+                      <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Humidity Requirements (%)</label>
-                    <Input 
-                      size="lg"
-                      name="humidity"
-                      value={shipment.storageConditions.humidity}
-                      onChange={handleStorageChange}
-                      className="w-full"
-                      placeholder="e.g. ≤60%"
-                    />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="p-6">
+                      <Typography variant="h6" color="blue-gray" className="mb-4 border-b pb-2">
+                        Basic Information
+                      </Typography>
+                      <div className="space-y-4">
+                        <div>
+                          <Typography variant="small" color="blue-gray" className="font-medium">
+                            Product ID
+                          </Typography>
+                          <Typography color="gray" className="font-normal">
+                            {scannedProduct.productId}
+                          </Typography>
+                        </div>
+                        <div>
+                          <Typography variant="small" color="blue-gray" className="font-medium">
+                            Product Name
+                          </Typography>
+                          <Typography color="gray" className="font-normal">
+                            {scannedProduct.name}
+                          </Typography>
+                        </div>
+                        <div>
+                          <Typography variant="small" color="blue-gray" className="font-medium">
+                            Batch Number
+                          </Typography>
+                          <Typography color="gray" className="font-normal">
+                            {scannedProduct.batchNumber}
+                          </Typography>
+                        </div>
+                        <div>
+                          <Typography variant="small" color="blue-gray" className="font-medium">
+                            Quantity
+                          </Typography>
+                          <Typography color="gray" className="font-normal">
+                            {scannedProduct.quantity} units
+                          </Typography>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-6">
+                      <Typography variant="h6" color="blue-gray" className="mb-4 border-b pb-2">
+                        Manufacturing Details
+                      </Typography>
+                      <div className="space-y-4">
+                        <div>
+                          <Typography variant="small" color="blue-gray" className="font-medium">
+                            Manufacturer
+                          </Typography>
+                          <Typography color="gray" className="font-normal">
+                            {scannedProduct.manufacturer}
+                          </Typography>
+                        </div>
+                        <div>
+                          <Typography variant="small" color="blue-gray" className="font-medium">
+                            Manufacturing Date
+                          </Typography>
+                          <Typography color="gray" className="font-normal">
+                            {scannedProduct.manufacturingDate}
+                          </Typography>
+                        </div>
+                        <div>
+                          <Typography variant="small" color="blue-gray" className="font-medium">
+                            Expiry Date
+                          </Typography>
+                          <Typography color="gray" className="font-normal">
+                            {scannedProduct.expiryDate}
+                          </Typography>
+                        </div>
+                        <div>
+                          <Typography variant="small" color="blue-gray" className="font-medium">
+                            Storage Conditions
+                          </Typography>
+                          <Typography color="gray" className="font-normal">
+                            Temp: {scannedProduct.storageConditions.temperature}, 
+                            Humidity: {scannedProduct.storageConditions.humidity}
+                          </Typography>
+                        </div>
+                      </div>
+                    </Card>
+                    
+                    <Card className="p-6 md:col-span-2">
+                      <Typography variant="h6" color="blue-gray" className="mb-4 border-b pb-2">
+                        Ingredients
+                      </Typography>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {scannedProduct.ingredients.map((ingredient, index) => (
+                          <div key={index} className="bg-blue-50 p-4 rounded-lg">
+                            <Typography variant="small" color="blue-gray" className="font-medium">
+                              {ingredient.name}
+                            </Typography>
+                            <Typography color="gray" className="font-normal">
+                              {ingredient.quantity}
+                            </Typography>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
                   </div>
                 </div>
-              </div>
-              
-              {/* Transporter Information */}
-              <div className="border-t border-gray-200 pt-6">
-                <h4 className="text-xl font-semibold text-gray-800 mb-6">Transporter Details</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Transporter Name</label>
-                    <Input 
-                      size="lg"
-                      name="name"
-                      value={shipment.transporter.name}
-                      onChange={handleTransporterChange}
-                      required
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">License Number</label>
-                    <Input 
-                      size="lg"
-                      name="license"
-                      value={shipment.transporter.license}
-                      onChange={handleTransporterChange}
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Information</label>
-                    <Input 
-                      size="lg"
-                      name="contact"
-                      value={shipment.transporter.contact}
-                      onChange={handleTransporterChange}
-                      required
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Status */}
-              <div className="border-t border-gray-200 pt-6">
-                <h4 className="text-xl font-semibold text-gray-800 mb-4">Shipment Status</h4>
-                <div className="w-72">
-                  <Select
-                    label="Select Status"
-                    value={shipment.status}
-                    onChange={(value) => setShipment(prev => ({ ...prev, status: value }))}
-                  >
-                    <Option value="pending">Pending</Option>
-                    <Option value="in-transit">In Transit</Option>
-                    <Option value="delivered">Delivered</Option>
-                    <Option value="cancelled">Cancelled</Option>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="flex justify-end pt-6">
-                <Button 
-                  type="submit"
-                  className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-lg font-medium transition-all hover:shadow-lg hover:scale-105"
-                >
-                  <Package className="mr-2 h-5 w-5" />
-                  <span>Record Shipment</span>
-                </Button>
-              </div>
-            </form>
-          </div>
+              )}
+            </div>
+          </Card>
         ) : (
           /* Analytics View */
           <div className="space-y-8">
@@ -605,4 +592,4 @@ function Distributor() {
   );
 }
 
-export default Distributor; 
+export default Distributor;

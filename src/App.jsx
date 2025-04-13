@@ -1,22 +1,31 @@
-import React from 'react';
+// App.jsx
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Login';
-//import Addusers from './components/Addusers';
 import Manifactured from './components/Manifactured';
-import QRScanner from './components/QRScanner';
+import DistributorQRScanner from './components/DistributorQRScanner'; // Updated import
+import PharmacyQRScanner from './components/PharmacyQRScanner'; // New import
+import QrCodeGenerator from './components/QrCodeGenerator'; // Ensure you have this component
 
 function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/manifactured" element={<Manifactured />} />
-        <Route path="/scan" element={<QRScanner />} />
+    const [medicamentId, setMedicamentId] = useState(''); // Store selected medicament ID
 
+    return (
+        <Router>
+            <div>
+                <Routes>
+                    <Route path="/" element={<Login />} />
+                    <Route path="/manifactured" element={<Manifactured />} />
+                    {/*  Add a route for Distributor Scanner */}
+                    <Route path="/scan/distributor" element={<DistributorQRScanner setMedicamentId={setMedicamentId} />} />
+                    {/*  Add a route for Pharmacy Scanner */}
+                    <Route path="/scan/pharmacy" element={<PharmacyQRScanner setMedicamentId={setMedicamentId} />} />
+                </Routes>
 
-      </Routes>
-    </Router>
-  );
+                {medicamentId && <QrCodeGenerator medicamentId={medicamentId} />} {/* Show QR Code when ID is set */}
+            </div>
+        </Router>
+    );
 }
 
 export default App;

@@ -36,7 +36,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -66,7 +67,7 @@
   "sourceMap": "68:1138:1:-:0;;;311:111;;;;;;;;;;344:10;336:5;;:18;;;;;;;;;;;;;;;;;;403:10;370:44;;399:1;370:44;;;;;;;;;;;;68:1138;;;;;;",
   "deployedSourceMap": "68:1138:1:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;1105:98;;;:::i;:::-;;637:81;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;782:270;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::i;:::-;;1105:98;534:5;;;;;;;;;;520:19;;:10;:19;;;512:55;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;1105:98::o;637:81::-;678:7;705:5;;;;;;;;;;;698:12;;637:81;:::o;782:270::-;534:5;;;;;;;;;;520:19;;:10;:19;;;512:55;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;883:1:::1;863:22;;:8;:22;;;;855:71;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;937:16;956:5:::0;::::1;;;;;;;;;;937:24;;980:8;972:5;::::0;:16:::1;;;;;;;;;;;;;;;;;;1035:8;1004:40;;1025:8;1004:40;;;;;;;;;;;;578:1;782:270:::0;:::o",
   "source": "// SPDX-License-Identifier: MIT\r\npragma solidity >=0.7.0 <0.9.0;\r\n\r\ncontract Owner {\r\n    address private owner;\r\n\r\n    // Event to log ownership transfer\r\n    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);\r\n\r\n    // Constructor sets the deployer as the initial owner\r\n    constructor() {\r\n        owner = msg.sender;\r\n        emit OwnershipTransferred(address(0), msg.sender);\r\n    }\r\n\r\n    // Modifier to restrict access to owner only\r\n    modifier onlyOwner() {\r\n        require(msg.sender == owner, \"Caller is not the owner\");\r\n        _;\r\n    }\r\n\r\n    // Function to get the current owner\r\n    function getOwner() public view returns (address) {\r\n        return owner;\r\n    }\r\n\r\n    // Function to transfer ownership to a new address\r\n    function transferOwnership(address newOwner) public onlyOwner {\r\n        require(newOwner != address(0), \"New owner cannot be the zero address\");\r\n        address oldOwner = owner;\r\n        owner = newOwner;\r\n        emit OwnershipTransferred(oldOwner, newOwner);\r\n    }\r\n\r\n    // Example function restricted to owner\r\n    function restrictedFunction() public onlyOwner {\r\n        // Add your owner-only logic here\r\n    }\r\n}",
-  "sourcePath": "C:\\Users\\HP\\Documents\\GitHub\\medproject\\contracts\\Owner.sol",
+  "sourcePath": "C:\\Users\\jook\\Desktop\\PFA_code\\medProjet1\\medProject\\contracts\\Owner.sol",
   "ast": {
     "absolutePath": "project:/contracts/Owner.sol",
     "exportedSymbols": {
@@ -2270,14 +2271,35 @@
   },
   "networks": {
     "5777": {
-      "events": {},
+      "events": {
+        "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+            }
+          ],
+          "name": "OwnershipTransferred",
+          "type": "event"
+        }
+      },
       "links": {},
-      "address": "0xaBe82CbdCdCdb54c1218D8CCdd1F4E84Fd54443B",
-      "transactionHash": "0xbcdb4f688935f016c300082e31a66d3a82a34992de091599d254f798eb738c71"
+      "address": "0x8f509Ba7a0d6bD102864ecEb43C2ECb513dCB11C",
+      "transactionHash": "0x1b7fe6a0bdd0a9ff75939e0899efd70bb7b49ddeed265092bbb3e32d9352d708"
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2025-04-13T15:14:51.474Z",
+  "updatedAt": "2025-04-13T17:01:27.323Z",
+  "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
     "methods": {},

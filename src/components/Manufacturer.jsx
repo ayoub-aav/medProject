@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Input, Button, Textarea } from "@material-tailwind/react";
 import { PlusCircle, CheckCircle, Factory, ClipboardList, FlaskConical } from 'lucide-react';
 
+import Web3 from 'web3';
+import MedecinContract from '../build/Medecin.json';
+
 function Manufacturer() {
   const [product, setProduct] = useState({
     nomMedicament: '',
@@ -28,9 +31,37 @@ function Manufacturer() {
     }]
   });
 
+  const [web3, setWeb3] = useState(null);
+  const [contract, setContract] = useState(null);
+  const [accounts, setAccounts] = useState([]);
+
   const [activeTab, setActiveTab] = useState('add');
   const [successMessage, setSuccessMessage] = useState("");
   const [currentMaterialTab, setCurrentMaterialTab] = useState(0);
+
+  const initWeb3 = async () => {
+      if (window.ethereum) {
+        const web3Instance = new Web3(window.ethereum);
+        const accounts = await web3Instance.eth.getAccounts();
+        const networkId = await web3Instance.eth.net.getId();
+        const deployedNetwork = MedecinContract.networks[networkId];
+        
+        const contractInstance = new web3Instance.eth.Contract(
+          MedecinContract.abi,
+          deployedNetwork && deployedNetwork.address,
+        );
+
+        setWeb3(web3Instance);
+        setContract(contractInstance);
+        setAccounts(accounts);
+        return true;
+      }
+      return false;
+    };
+
+
+
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

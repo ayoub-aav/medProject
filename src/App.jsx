@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Login';
 import Addusers from './components/Addusers';
-import Manifactured from './components/Manifactured';
+import Manufacturer from './components/Manufacturer';
 
 
 function App() {
@@ -11,7 +11,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/admin" element={<Addusers />} />
-        <Route path="/manifactured" element={<Manifactured />} />
+        <Route path="/manufacturer" element={<Manufacturer />} />
       </Routes>
     </Router>
   );

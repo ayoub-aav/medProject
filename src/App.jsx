@@ -5,6 +5,7 @@ import Addusers from './components/Addusers';
 import Manufacturer from './components/Manufacturer';
 import Distributor from './components/Distributor';
 import Pharmacy from './components/Pharmacy';
+import Consumer from './components/Consumer';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/Manufacturer" element={<Manufacturer />} />
         <Route path="/Distributor" element={<Distributor />} />
         <Route path="/Pharmacy" element={<Pharmacy />} />
+        <Route path="/Consumer" element={<Consumer />} />
       </Routes>
     </Router>
   );

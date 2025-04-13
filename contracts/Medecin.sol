@@ -61,6 +61,17 @@ contract TracabiliteMedicaments {
     event MatierePremiereAjoutee(uint256 indexed lotId, string nom, string fournisseur);
     event UniteMedicamentCreee(string medicamentId, uint256 lotId, uint256 timestamp);
     event ConditionsMedicamentMisesAJour(string medicamentId, int8 temperature, uint8 humidite, string positionX, string positionY, uint256 timestamp);
+    // Nouvel événement pour les alertes de conditions non conformes
+    event AlerteConditionsNonConformes(
+        string medicamentId, 
+        uint256 lotId, 
+        int8 temperatureActuelle, 
+        uint8 humiditeActuelle, 
+        int8 temperatureMinRequise, 
+        int8 temperatureMaxRequise, 
+        uint8 humiditeMinRequise, 
+        uint8 humiditeMaxRequise
+    );
 
     // Créer un nouveau lot de médicaments
     function creerLotMedicament(
@@ -72,6 +83,7 @@ contract TracabiliteMedicaments {
         string memory _nomFabricant,
         string memory _paysOrigine,
         string memory _amm,
+        MatierePremiere[] memory matieresPremieresLot,
         int8 _temperatureMax,
         int8 _temperatureMin,
         uint8 _humiditeMax,
@@ -87,23 +99,24 @@ contract TracabiliteMedicaments {
             humiditeMin: _humiditeMin
         });
 
-        // Initialiser la structure LotMedicament avec un tableau vide de matières premières
-        MatierePremiere[] memory matieresPremieresVide = new MatierePremiere[](0);
-        
-        lots[lotId] = LotMedicament({
-            lotId: lotId,
-            nomMedicament: _nomMedicament,
-            substanceActive: _substanceActive,
-            forme: _forme,
-            dateFabrication: _dateFabrication,
-            datePeremption: _datePeremption,
-            nomFabricant: _nomFabricant,
-            paysOrigine: _paysOrigine,
-            amm: _amm,
-            conditionsConservation: conservation,
-            matieresPremieresLot: matieresPremieresVide,
-            timestamp: block.timestamp
-        });
+        // Create the LotMedicament in storage
+        LotMedicament storage lot = lots[lotId];
+        lot.lotId = lotId;
+        lot.nomMedicament = _nomMedicament;
+        lot.substanceActive = _substanceActive;
+        lot.forme = _forme;
+        lot.dateFabrication = _dateFabrication;
+        lot.datePeremption = _datePeremption;
+        lot.nomFabricant = _nomFabricant;
+        lot.paysOrigine = _paysOrigine;
+        lot.amm = _amm;
+        lot.conditionsConservation = conservation;
+        lot.timestamp = block.timestamp;
+
+        // Copy the matieresPremieresLot array from memory to storage
+        for (uint i = 0; i < matieresPremieresLot.length; i++) {
+            lot.matieresPremieresLot.push(matieresPremieresLot[i]);
+        }
 
         emit LotCree(lotId, _nomMedicament, block.timestamp);
         return lotId;
@@ -138,7 +151,27 @@ contract TracabiliteMedicaments {
         emit MatierePremiereAjoutee(_lotId, _nom, _fournisseur);
     }
 
-    // Créer une unité de médicament
+    // Fonction interne pour vérifier la conformité des conditions
+    function _verifierConditionsConformite(
+        uint256 _lotId, 
+        int8 _temperature, 
+        uint8 _humidite
+    ) internal view returns (bool) {
+        Conservation memory conditions = lots[_lotId].conditionsConservation;
+        
+        // Vérifier si la température est dans la plage acceptable
+        bool temperatureConforme = (_temperature >= conditions.temperatureMin && 
+                                  _temperature <= conditions.temperatureMax);
+                                  
+        // Vérifier si l'humidité est dans la plage acceptable
+        bool humiditeConforme = (_humidite >= conditions.humiditeMin && 
+                               _humidite <= conditions.humiditeMax);
+                               
+        // Les conditions sont conformes si les deux sont conformes
+        return temperatureConforme && humiditeConforme;
+    }
+
+    // Créer une unité de médicament avec vérification des conditions
     function creerUniteMedicament(
         string memory _medicamentId,
         uint256 _lotId,
@@ -149,6 +182,26 @@ contract TracabiliteMedicaments {
     ) public {
         require(lots[_lotId].lotId == _lotId, "Lot inexistant");
         
+        // Vérifier la conformité des conditions
+        bool conditionsConformes = _verifierConditionsConformite(_lotId, _temperature, _humidite);
+        
+        // Si les conditions ne sont pas conformes, émettre une alerte et annuler l'opération
+        if (!conditionsConformes) {
+            Conservation memory conditions = lots[_lotId].conditionsConservation;
+            emit AlerteConditionsNonConformes(
+                _medicamentId,
+                _lotId,
+                _temperature,
+                _humidite,
+                conditions.temperatureMin,
+                conditions.temperatureMax,
+                conditions.humiditeMin,
+                conditions.humiditeMax
+            );
+            revert("Conditions de conservation non conformes");
+        }
+        
+        // Si les conditions sont conformes, créer l'unité de médicament
         ConditionsActuelles memory conditions = ConditionsActuelles({
             temperature: _temperature,
             humidite: _humidite,
@@ -178,6 +231,28 @@ contract TracabiliteMedicaments {
         // Vérifier que l'unité de médicament existe
         require(bytes(unitesMedicament[_medicamentId].medicamentId).length > 0, "Médicament inexistant");
         
+        // Récupérer le lotId associé à cette unité
+        uint256 lotId = unitesMedicament[_medicamentId].lotId;
+        
+        // Vérifier la conformité des conditions
+        bool conditionsConformes = _verifierConditionsConformite(lotId, _temperature, _humidite);
+        
+        // Si les conditions ne sont pas conformes, émettre une alerte mais mettre quand même à jour
+        // pour tracer les conditions problématiques
+        if (!conditionsConformes) {
+            Conservation memory conditions = lots[lotId].conditionsConservation;
+            emit AlerteConditionsNonConformes(
+                _medicamentId,
+                lotId,
+                _temperature,
+                _humidite,
+                conditions.temperatureMin,
+                conditions.temperatureMax,
+                conditions.humiditeMin,
+                conditions.humiditeMax
+            );
+        }
+        
         // Mettre à jour les conditions actuelles
         unitesMedicament[_medicamentId].conditionsActuelles = ConditionsActuelles({
             temperature: _temperature,
@@ -201,15 +276,43 @@ contract TracabiliteMedicaments {
     ) public {
         require(lots[_lotId].lotId == _lotId, "Lot inexistant");
         
-        for (uint i = 0; i < _medicamentIds.length; i++) {
-            creerUniteMedicament(
-                _medicamentIds[i],
+        // Vérifier d'abord si les conditions sont conformes
+        bool conditionsConformes = _verifierConditionsConformite(_lotId, _temperature, _humidite);
+        
+        // Si les conditions ne sont pas conformes, émettre une alerte et annuler l'opération
+        if (!conditionsConformes) {
+            Conservation memory conditions = lots[_lotId].conditionsConservation;
+            emit AlerteConditionsNonConformes(
+                "lot_multiple",
                 _lotId,
                 _temperature,
                 _humidite,
-                _positionX,
-                _positionY
+                conditions.temperatureMin,
+                conditions.temperatureMax,
+                conditions.humiditeMin,
+                conditions.humiditeMax
             );
+            revert("Conditions de conservation non conformes pour la création en lot");
+        }
+        
+        // Si les conditions sont conformes, créer toutes les unités
+        for (uint i = 0; i < _medicamentIds.length; i++) {
+            ConditionsActuelles memory conditions = ConditionsActuelles({
+                temperature: _temperature,
+                humidite: _humidite,
+                positionX: _positionX,
+                positionY: _positionY,
+                timestamp: block.timestamp
+            });
+            
+            unitesMedicament[_medicamentIds[i]] = UniteMedicament({
+                medicamentId: _medicamentIds[i],
+                lotId: _lotId,
+                conditionsActuelles: conditions,
+                timestampCreation: block.timestamp
+            });
+            
+            emit UniteMedicamentCreee(_medicamentIds[i], _lotId, block.timestamp);
         }
     }
 
@@ -220,5 +323,16 @@ contract TracabiliteMedicaments {
 
     function obtenirUniteMedicament(string memory _medicamentId) public view returns (UniteMedicament memory) {
         return unitesMedicament[_medicamentId];
+    }
+    
+    // Nouvelle fonction pour vérifier si les conditions actuelles sont conformes
+    function verifierConditionsConformes(string memory _medicamentId) public view returns (bool) {
+        require(bytes(unitesMedicament[_medicamentId].medicamentId).length > 0, "Médicament inexistant");
+        
+        uint256 lotId = unitesMedicament[_medicamentId].lotId;
+        int8 temperature = unitesMedicament[_medicamentId].conditionsActuelles.temperature;
+        uint8 humidite = unitesMedicament[_medicamentId].conditionsActuelles.humidite;
+        
+        return _verifierConditionsConformite(lotId, temperature, humidite);
     }
 }

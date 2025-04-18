@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
-import { Input, Button, Textarea } from "@material-tailwind/react";
-import { PlusCircle, CheckCircle, Factory, ClipboardList, FlaskConical } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Upload, ChevronDown, ChevronUp, Plus, Minus, FileSpreadsheet } from 'lucide-react';
+import { initWeb3 } from '../utils/web3Connection_medecin';
 
-import Web3 from 'web3';
-import MedecinContract from '../build/Medecin.json';
 
 function Manufacturer() {
-  const [product, setProduct] = useState({
+  const [web3Instance, setWeb3Instance] = useState();
+  const [contractInstance, setContractInstance] = useState();
+  const [accounts, setAccounts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [csvData, setCsvData] = useState(null);
+  
+  // Form states
+  const [showRawMaterials, setShowRawMaterials] = useState(false);
+  const [lotDetails, setLotDetails] = useState({
     nomMedicament: '',
     substanceActive: '',
     forme: '',
@@ -14,12 +20,65 @@ function Manufacturer() {
     datePeremption: '',
     nomFabricant: '',
     paysOrigine: '',
-    amm: '',
-    temperatureMax: '',
-    temperatureMin: '',
-    humiditeMax: '',
-    humiditeMin: '',
-    matieresPremieres: [{
+    amm: ''
+  });
+  
+  const [conservation, setConservation] = useState({
+    temperatureMax: "",
+    temperatureMin: "",
+    humiditeMax: "",
+    humiditeMin: ""
+  });
+  
+  const [rawMaterials, setRawMaterials] = useState([{
+    nom: '',
+    origine: '',
+    fournisseur: '',
+    degrePurete: '',
+    quantiteParUnite: '',
+    certificatAnalyse: '',
+    dateReception: '',
+    transport: ''
+  }]);
+
+  useEffect(() => {
+    const loadWeb3 = async () => {
+      try {
+        // Assuming initWeb3 is defined in an external module
+        const { web3Instance, contractInstance, accounts } = await initWeb3();
+        setWeb3Instance(web3Instance);
+        setContractInstance(contractInstance);
+        setAccounts(accounts);
+      } catch (error) {
+        console.error("Failed to load web3:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadWeb3();
+  }, []);
+
+  const handleLotDetailsChange = (e) => {
+    const { name, value } = e.target;
+    setLotDetails(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleConservationChange = (e) => {
+    const { name, value } = e.target;
+    // Store as string instead of parsing to integer immediately
+    setConservation(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleRawMaterialChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedMaterials = [...rawMaterials];
+    updatedMaterials[index] = { ...updatedMaterials[index], [name]: value };
+    setRawMaterials(updatedMaterials);
+  };
+
+  const addRawMaterial = () => {
+    setRawMaterials([...rawMaterials, {
       nom: '',
       origine: '',
       fournisseur: '',
@@ -28,497 +87,485 @@ function Manufacturer() {
       certificatAnalyse: '',
       dateReception: '',
       transport: ''
-    }]
-  });
-
-  const [web3, setWeb3] = useState(null);
-  const [contract, setContract] = useState(null);
-  const [accounts, setAccounts] = useState([]);
-
-  const [activeTab, setActiveTab] = useState('add');
-  const [successMessage, setSuccessMessage] = useState("");
-  const [currentMaterialTab, setCurrentMaterialTab] = useState(0);
-
-  const initWeb3 = async () => {
-      if (window.ethereum) {
-        const web3Instance = new Web3(window.ethereum);
-        const accounts = await web3Instance.eth.getAccounts();
-        const networkId = await web3Instance.eth.net.getId();
-        const deployedNetwork = MedecinContract.networks[networkId];
-        
-        const contractInstance = new web3Instance.eth.Contract(
-          MedecinContract.abi,
-          deployedNetwork && deployedNetwork.address,
-        );
-
-        setWeb3(web3Instance);
-        setContract(contractInstance);
-        setAccounts(accounts);
-        return true;
-      }
-      return false;
-    };
-
-
-
-
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setProduct(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    }]);
   };
 
-  const handleMaterialChange = (e, index) => {
-    const { name, value } = e.target;
-    const updatedMaterials = [...product.matieresPremieres];
-    updatedMaterials[index][name] = value;
-    
-    setProduct(prev => ({
-      ...prev,
-      matieresPremieres: updatedMaterials
-    }));
-  };
-
-  const addMaterial = () => {
-    setProduct(prev => ({
-      ...prev,
-      matieresPremieres: [
-        ...prev.matieresPremieres,
-        {
-          nom: '',
-          origine: '',
-          fournisseur: '',
-          degrePurete: '',
-          quantiteParUnite: '',
-          certificatAnalyse: '',
-          dateReception: '',
-          transport: ''
-        }
-      ]
-    }));
-    setCurrentMaterialTab(product.matieresPremieres.length);
-  };
-
-  const removeMaterial = (index) => {
-    if (product.matieresPremieres.length <= 1) return;
-    
-    const updatedMaterials = product.matieresPremieres.filter((_, i) => i !== index);
-    setProduct(prev => ({
-      ...prev,
-      matieresPremieres: updatedMaterials
-    }));
-    
-    if (currentMaterialTab >= index) {
-      setCurrentMaterialTab(Math.max(0, currentMaterialTab - 1));
+  const removeRawMaterial = (index) => {
+    if (rawMaterials.length > 1) {
+      const updatedMaterials = rawMaterials.filter((_, i) => i !== index);
+      setRawMaterials(updatedMaterials);
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSuccessMessage(`Production batch ${product.nomMedicament} recorded successfully!`);
-    
-    // Reset form
-    setProduct({
-      nomMedicament: '',
-      substanceActive: '',
-      forme: '',
-      dateFabrication: '',
-      datePeremption: '',
-      nomFabricant: '',
-      paysOrigine: '',
-      amm: '',
-      temperatureMax: '',
-      temperatureMin: '',
-      humiditeMax: '',
-      humiditeMin: '',
-      matieresPremieres: [{
-        nom: '',
-        origine: '',
-        fournisseur: '',
-        degrePurete: '',
-        quantiteParUnite: '',
-        certificatAnalyse: '',
-        dateReception: '',
-        transport: ''
-      }]
-    });
-    
-    setTimeout(() => {
-      setSuccessMessage("");
-    }, 5000);
+  const handleCsvUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const csvContent = event.target.result;
+      // Parse CSV content
+      const parsedData = parseCSV(csvContent);
+      setCsvData(parsedData);
+    };
+    reader.readAsText(file);
   };
 
+  const parseCSV = (csvContent) => {
+    const lines = csvContent.split('\n');
+    const result = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim() === '') continue;
+      const values = lines[i].split(',');
+      
+      // Assuming first column is medicamentId and second column is boxId
+      if (values.length >= 2) {
+        result.push({
+          medicamentId: values[0].trim(),
+          boxId: values[1].trim()
+        });
+      }
+    }
+    
+    return result;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!contractInstance || !accounts.length) {
+      alert("Web3 not initialized or no accounts available");
+      return;
+    }
+
+    try {
+      // In handleSubmit, ensure numbers are properly converted
+      const result = await contractInstance.methods.creerLotMedicament(
+        lotDetails,
+        {
+          temperatureMax: parseInt(conservation.temperatureMax),
+          temperatureMin: parseInt(conservation.temperatureMin),
+          humiditeMax: parseInt(conservation.humiditeMax),
+          humiditeMin: parseInt(conservation.humiditeMin)
+        },
+        rawMaterials
+      ).send({ from: accounts[0] });
+      
+      console.log("Lot created:", result);
+      alert(`Lot created successfully with ID: ${result.events.LotCree.returnValues.lotId}`);
+      
+      // If CSV data is available, process it
+      if (csvData && csvData.length > 0) {
+        processCSVData(result.events.LotCree.returnValues.lotId);
+      }
+    } catch (error) {
+      console.error("Error creating lot:", error);
+      alert("Failed to create lot. See console for details.");
+    }
+  };
+  
+  const processCSVData = async (lotId) => {
+    try {
+      // Group medicamentIds by boxId
+      const boxGroups = {};
+      csvData.forEach(item => {
+        if (!boxGroups[item.boxId]) {
+          boxGroups[item.boxId] = [];
+        }
+        boxGroups[item.boxId].push(item.medicamentId);
+      });
+      
+      // Create all medicine units first
+      const allMedicamentIds = csvData.map(item => item.medicamentId);
+      const conditions = {
+        temperature: 20,
+        humidite: 50,
+        positionX: "0",
+        positionY: "0",
+        timestamp: Math.floor(Date.now() / 1000)
+      };
+      
+      await contractInstance.methods.createMedicamentUnits(
+        allMedicamentIds,
+        lotId,
+        conditions
+      ).send({ from: accounts[0] });
+      
+      // Assign medicines to boxes
+      for (const boxId in boxGroups) {
+        await contractInstance.methods.assignMedicamentsToBox(
+          boxId,
+          boxGroups[boxId]
+        ).send({ from: accounts[0] });
+      }
+      
+      alert("CSV data processed successfully!");
+    } catch (error) {
+      console.error("Error processing CSV data:", error);
+      alert("Failed to process CSV data. See console for details.");
+    }
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">Loading Web3...</div>;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-white via-blue-100 to-orange-200 p-4">
-      <div className="w-full max-w-7xl">
-        {/* Header with logo and title */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center">
-            <div className="bg-blue-600 text-white p-3 rounded-lg mr-4">
-              <Factory className="h-8 w-8" />
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-6 text-center">Manufacturer Interface</h1>
+      
+      {!accounts.length ? (
+        <div className="p-4 bg-red-100 text-red-700 rounded-md mb-6">
+          No Ethereum accounts connected. Please connect your wallet.
+        </div>
+      ) : (
+        <div className="p-4 bg-green-100 text-green-700 rounded-md mb-6">
+          Connected account: {accounts[0]}
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Lot Details Section */}
+        <div className="bg-gray-50 p-4 rounded-md">
+          <h2 className="text-xl font-semibold mb-4">Lot Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Medicine Name</label>
+              <input
+                type="text"
+                name="nomMedicament"
+                value={lotDetails.nomMedicament}
+                onChange={handleLotDetailsChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                required
+              />
             </div>
-            <h1 className="text-4xl font-bold text-gray-800">PharmaFab</h1>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Active Substance</label>
+              <input
+                type="text"
+                name="substanceActive"
+                value={lotDetails.substanceActive}
+                onChange={handleLotDetailsChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Form</label>
+              <input
+                type="text"
+                name="forme"
+                value={lotDetails.forme}
+                onChange={handleLotDetailsChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Manufacturing Date</label>
+              <input
+                type="date"
+                name="dateFabrication"
+                value={lotDetails.dateFabrication}
+                onChange={handleLotDetailsChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Expiration Date</label>
+              <input
+                type="date"
+                name="datePeremption"
+                value={lotDetails.datePeremption}
+                onChange={handleLotDetailsChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Manufacturer Name</label>
+              <input
+                type="text"
+                name="nomFabricant"
+                value={lotDetails.nomFabricant}
+                onChange={handleLotDetailsChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Country of Origin</label>
+              <input
+                type="text"
+                name="paysOrigine"
+                value={lotDetails.paysOrigine}
+                onChange={handleLotDetailsChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">AMM Number</label>
+              <input
+                type="text"
+                name="amm"
+                value={lotDetails.amm}
+                onChange={handleLotDetailsChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                required
+              />
+            </div>
           </div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Manufacturing Control Panel
-          </h2>
         </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 mb-8">
-          <button
-            className={`py-2 px-4 font-medium ${activeTab === 'add' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-            onClick={() => setActiveTab('add')}
-          >
-            <div className="flex items-center">
-              <PlusCircle className="mr-2 h-5 w-5" />
-              <span>Record Production</span>
+        
+        {/* Conservation Conditions Section */}
+        <div className="bg-gray-50 p-4 rounded-md">
+          <h2 className="text-xl font-semibold mb-4">Conservation Conditions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Max Temperature (°C)</label>
+              <input
+                type="number"
+                name="temperatureMax"
+                value={conservation.temperatureMax}
+                onChange={handleConservationChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                required
+              />
             </div>
-          </button>
-          <button
-            className={`py-2 px-4 font-medium ${activeTab === 'view' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-            onClick={() => setActiveTab('view')}
-          >
-            <div className="flex items-center">
-              <ClipboardList className="mr-2 h-5 w-5" />
-              <span>Production Analytics</span>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Min Temperature (°C)</label>
+              <input
+                type="number"
+                name="temperatureMin"
+                value={conservation.temperatureMin}
+                onChange={handleConservationChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                required
+              />
             </div>
-          </button>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Max Humidity (%)</label>
+              <input
+                type="number"
+                name="humiditeMax"
+                value={conservation.humiditeMax}
+                onChange={handleConservationChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                min="0"
+                max="100"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Min Humidity (%)</label>
+              <input
+                type="number"
+                name="humiditeMin"
+                value={conservation.humiditeMin}
+                onChange={handleConservationChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                min="0"
+                max="100"
+                required
+              />
+            </div>
+          </div>
         </div>
-
-        {activeTab === 'add' ? (
-          /* Add Production Form */
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 mb-8">
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                <FlaskConical className="mr-2 h-6 w-6 text-blue-600" />
-                <span>Manufacturing Record</span>
-              </h3>
-              
-              {successMessage && (
-                <div className="flex items-center space-x-2 bg-green-50 p-3 rounded-lg border border-green-100 text-green-700 animate-pulse">
-                  <CheckCircle className="h-5 w-5" />
-                  <span>{successMessage}</span>
-                </div>
+        
+        {/* Raw Materials Section */}
+        <div className="bg-gray-50 p-4 rounded-md">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Raw Materials</h2>
+            <button
+              type="button"
+              onClick={() => setShowRawMaterials(!showRawMaterials)}
+              className="flex items-center text-blue-600"
+            >
+              {showRawMaterials ? (
+                <>Hide <ChevronUp className="ml-1" size={16} /></>
+              ) : (
+                <>Show <ChevronDown className="ml-1" size={16} /></>
               )}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom du Médicament*</label>
-                  <Input 
-                    size="lg"
-                    name="nomMedicament"
-                    value={product.nomMedicament}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                    placeholder="e.g. Paracetamol 500mg"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Substance Active*</label>
-                  <Input 
-                    size="lg"
-                    name="substanceActive"
-                    value={product.substanceActive}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                    placeholder="e.g. Paracetamol"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Forme*</label>
-                  <Input 
-                    size="lg"
-                    name="forme"
-                    value={product.forme}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                    placeholder="e.g. Comprimé, Gélule, etc."
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date de Fabrication*</label>
-                  <Input 
-                    type="date"
-                    size="lg"
-                    name="dateFabrication"
-                    value={product.dateFabrication}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date de Péremption*</label>
-                  <Input 
-                    type="date"
-                    size="lg"
-                    name="datePeremption"
-                    value={product.datePeremption}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom du Fabricant*</label>
-                  <Input 
-                    size="lg"
-                    name="nomFabricant"
-                    value={product.nomFabricant}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pays d'Origine*</label>
-                  <Input 
-                    size="lg"
-                    name="paysOrigine"
-                    value={product.paysOrigine}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">AMM (Autorisation de Mise sur le Marché)*</label>
-                  <Input 
-                    size="lg"
-                    name="amm"
-                    value={product.amm}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Température Max (°C)*</label>
-                  <Input 
-                    type="number"
-                    size="lg"
-                    name="temperatureMax"
-                    value={product.temperatureMax}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Température Min (°C)*</label>
-                  <Input 
-                    type="number"
-                    size="lg"
-                    name="temperatureMin"
-                    value={product.temperatureMin}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Humidité Max (%)*</label>
-                  <Input 
-                    type="number"
-                    size="lg"
-                    name="humiditeMax"
-                    value={product.humiditeMax}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Humidité Min (%)*</label>
-                  <Input 
-                    type="number"
-                    size="lg"
-                    name="humiditeMin"
-                    value={product.humiditeMin}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              {/* Matières Premières Section */}
-              <div className="flex mt-6">
-                <div className="flex-1">
-                  <h4 className="text-xl font-semibold text-gray-800 mb-6">Matières Premières</h4>
-
-                  <div className="flex overflow-x-auto mb-4 border-b border-gray-200">
-                    {product.matieresPremieres.map((_, index) => (
-                      <button
-                        key={index}
-                        className={`px-4 py-2 font-medium whitespace-nowrap ${currentMaterialTab === index ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                        onClick={() => setCurrentMaterialTab(index)}
-                      >
-                        Matériel {index + 1}
-                        {product.matieresPremieres.length > 1 && (
-                          <button 
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); removeMaterial(index); }}
-                            className="ml-2 text-red-400 hover:text-red-600"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Current Material Form */}
-                  {product.matieresPremieres.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nom*</label>
-                        <Input 
-                          size="lg"
-                          name="nom"
-                          value={product.matieresPremieres[currentMaterialTab].nom}
-                          onChange={(e) => handleMaterialChange(e, currentMaterialTab)}
-                          required
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Origine*</label>
-                        <Input 
-                          size="lg"
-                          name="origine"
-                          value={product.matieresPremieres[currentMaterialTab].origine}
-                          onChange={(e) => handleMaterialChange(e, currentMaterialTab)}
-                          required
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Fournisseur*</label>
-                        <Input 
-                          size="lg"
-                          name="fournisseur"
-                          value={product.matieresPremieres[currentMaterialTab].fournisseur}
-                          onChange={(e) => handleMaterialChange(e, currentMaterialTab)}
-                          required
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Degré de Pureté*</label>
-                        <Input 
-                          size="lg"
-                          name="degrePurete"
-                          value={product.matieresPremieres[currentMaterialTab].degrePurete}
-                          onChange={(e) => handleMaterialChange(e, currentMaterialTab)}
-                          required
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Quantité par Unité*</label>
-                        <Input 
-                          size="lg"
-                          name="quantiteParUnite"
-                          value={product.matieresPremieres[currentMaterialTab].quantiteParUnite}
-                          onChange={(e) => handleMaterialChange(e, currentMaterialTab)}
-                          required
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Certificat d'Analyse*</label>
-                        <Input 
-                          size="lg"
-                          name="certificatAnalyse"
-                          value={product.matieresPremieres[currentMaterialTab].certificatAnalyse}
-                          onChange={(e) => handleMaterialChange(e, currentMaterialTab)}
-                          required
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Date de Réception*</label>
-                        <Input 
-                          type="date"
-                          size="lg"
-                          name="dateReception"
-                          value={product.matieresPremieres[currentMaterialTab].dateReception}
-                          onChange={(e) => handleMaterialChange(e, currentMaterialTab)}
-                          required
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Transport*</label>
-                        <Input 
-                          size="lg"
-                          name="transport"
-                          value={product.matieresPremieres[currentMaterialTab].transport}
-                          onChange={(e) => handleMaterialChange(e, currentMaterialTab)}
-                          required
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex justify-end pt-6">
-                    <Button 
+            </button>
+          </div>
+          
+          {showRawMaterials && (
+            <div className="space-y-6">
+              {rawMaterials.map((material, index) => (
+                <div key={index} className="p-4 border border-gray-200 rounded-md">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-medium">Raw Material #{index + 1}</h3>
+                    <button
                       type="button"
-                      onClick={addMaterial}
-                      className="mt-4 inline-flex items-center justify-center bg-blue-500 text-white px-4 py-2 rounded-lg"
+                      onClick={() => removeRawMaterial(index)}
+                      className="text-red-500"
+                      disabled={rawMaterials.length === 1}
                     >
-                      <PlusCircle className="mr-2 h-5 w-5" />
-                      Ajouter Matière Première
-                    </Button>
+                      <Minus size={16} />
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Name</label>
+                      <input
+                        type="text"
+                        name="nom"
+                        value={material.nom}
+                        onChange={(e) => handleRawMaterialChange(index, e)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Origin</label>
+                      <input
+                        type="text"
+                        name="origine"
+                        value={material.origine}
+                        onChange={(e) => handleRawMaterialChange(index, e)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Supplier</label>
+                      <input
+                        type="text"
+                        name="fournisseur"
+                        value={material.fournisseur}
+                        onChange={(e) => handleRawMaterialChange(index, e)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Purity Degree</label>
+                      <input
+                        type="text"
+                        name="degrePurete"
+                        value={material.degrePurete}
+                        onChange={(e) => handleRawMaterialChange(index, e)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Quantity Per Unit</label>
+                      <input
+                        type="text"
+                        name="quantiteParUnite"
+                        value={material.quantiteParUnite}
+                        onChange={(e) => handleRawMaterialChange(index, e)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Analysis Certificate</label>
+                      <input
+                        type="text"
+                        name="certificatAnalyse"
+                        value={material.certificatAnalyse}
+                        onChange={(e) => handleRawMaterialChange(index, e)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Reception Date</label>
+                      <input
+                        type="date"
+                        name="dateReception"
+                        value={material.dateReception}
+                        onChange={(e) => handleRawMaterialChange(index, e)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Transport</label>
+                      <input
+                        type="text"
+                        name="transport"
+                        value={material.transport}
+                        onChange={(e) => handleRawMaterialChange(index, e)}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
               
-              <div className="flex justify-end pt-6">
-                <Button 
-                  type="submit"
-                  className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-lg font-medium transition-all hover:shadow-lg hover:scale-105"
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={addRawMaterial}
+                  className="flex items-center text-blue-600"
                 >
-                  <PlusCircle className="mr-2 h-5 w-5" />
-                  <span>Enregistrer la Production</span>
-                </Button>
+                  <Plus size={16} className="mr-1" /> Add Raw Material
+                </button>
               </div>
-            </form>
+            </div>
+          )}
+        </div>
+        
+        {/* CSV Upload Section */}
+        <div className="bg-gray-50 p-4 rounded-md">
+          <h2 className="text-xl font-semibold mb-4">CSV Upload</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Upload a CSV file containing the medicament IDs and box IDs. 
+            The CSV should have two columns: first column for medicament ID, second column for box ID.
+          </p>
+          
+          <div className="flex items-center space-x-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Upload CSV File</label>
+              <div className="flex items-center">
+                <label className="cursor-pointer bg-white border border-gray-300 rounded-md px-3 py-2 flex items-center">
+                  <FileSpreadsheet size={18} className="mr-2 text-green-600" />
+                  <span>Choose CSV file</span>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleCsvUpload}
+                    className="hidden"
+                  />
+                </label>
+                {csvData && (
+                  <span className="ml-3 text-sm text-green-600">
+                    {csvData.length} entries loaded
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-        ) : (
-          /* Analytics View */
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Production Analytics</h3>
-            <p className="text-gray-600">This section would display production analytics if connected to the smart contract.</p>
-          </div>
-        )}
-      </div>
+        </div>
+        
+        {/* Submit Button */}
+        <div className="flex justify-center">
+          <button
+            type="submit"
+            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={!accounts.length}
+          >
+            Create Lot and Process Data
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

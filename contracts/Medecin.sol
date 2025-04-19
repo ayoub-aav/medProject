@@ -121,18 +121,32 @@ contract Medecin {
         }
     }
 
-    // Assign multiple existing medicines to a box
-    function assignMedicamentsToBox(
+    function createAndAssignMedicaments(
         string memory _boxId,
-        string[] memory _medicamentIds
+        string[] memory _medicamentIds,
+        uint256 _lotId,
+        ConditionsActuelles memory _conditions
     ) public {
+        // 1. Créer les médicaments
         for (uint i = 0; i < _medicamentIds.length; i++) {
-            require(bytes(medicaments[_medicamentIds[i]].medicamentId).length > 0, "Medicament does not exist");
+            medicaments[_medicamentIds[i]] = UniteMedicament({
+                medicamentId: _medicamentIds[i],
+                lotId: _lotId,
+                conditionsActuelles: _conditions,
+                timestampCreation: block.timestamp
+            });
+
+            emit MedicamentCreated(_medicamentIds[i], _lotId);
+        }
+
+        // 2. Les associer à une boîte
+        for (uint i = 0; i < _medicamentIds.length; i++) {
             boxToMedicaments[_boxId].push(_medicamentIds[i]);
         }
-        
-        emit BoxAssembled(_boxId, medicaments[_medicamentIds[0]].lotId, _medicamentIds.length);
+
+        emit BoxAssembled(_boxId, _lotId, _medicamentIds.length);
     }
+
 
     // Get all medicine IDs in a box
     function getMedicamentsInBox(string memory _boxId) public view returns (string[] memory) {
@@ -141,11 +155,9 @@ contract Medecin {
 
     // Get medicine details
     function getMedicamentDetails(string memory _medicamentId) public view returns (
-        UniteMedicament memory,
-        LotMedicament memory
+        UniteMedicament memory
     ) {
         UniteMedicament memory unit = medicaments[_medicamentId];
-        LotMedicament memory lot = lots[unit.lotId];
-        return (unit, lot);
+        return (unit);
     }
 }

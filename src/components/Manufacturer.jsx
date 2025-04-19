@@ -3,16 +3,15 @@ import { ChevronDown, ChevronUp, Plus, Minus, Upload } from 'lucide-react';
 import { initWeb3 } from '../utils/web3Connection_medecin';
 import { processMedicamentCSVFile } from '../utils/processMedicamentCSV';
 
-function Manufacturer() {
+export default function Manufacturer() {
   const [web3Instance, setWeb3Instance] = useState();
   const [contractInstance, setContractInstance] = useState();
   const [accounts, setAccounts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showRawMaterials, setShowRawMaterials] = useState(false);
+  const [showRawMaterials, setShowRawMaterials] = useState(true);
   const [transactionStatus, setTransactionStatus] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [currentLotId, setCurrentLotId] = useState(null);
-  const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [boxConditions, setBoxConditions] = useState({
     temperature: "",
     humidite: "",
@@ -183,18 +182,20 @@ function Manufacturer() {
         timestamp: Math.floor(Date.now() / 1000)
       };
 
-      for (const boxId in boxMappings) {
-        const medicamentIds = boxMappings[boxId];
-        
-        await contractInstance.methods
-          .createAndAssignMedicaments(
-            boxId,
-            medicamentIds,
-            currentLotId,
-            conditionsData
-          )
-          .send({ from: accounts[0] });
-      }
+      // Convert boxMappings to an array of Box objects
+      const boxes = Object.keys(boxMappings).map(boxId => ({
+        boxId: boxId,
+        medicamentIds: boxMappings[boxId]
+      }));
+
+      // Call the contract function with the array of boxes
+      await contractInstance.methods
+        .createAndAssignMedicaments(
+          boxes,
+          currentLotId,
+          conditionsData
+        )
+        .send({ from: accounts[0] });
       
       setTransactionStatus('success-assign');
       
@@ -239,21 +240,11 @@ function Manufacturer() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold mb-6 text-center">Manufacturer Interface</h1>
+    <div className="w-full h-screen bg-white p-4">
+      <h1 className="text-2xl font-bold text-center mb-4">Manufacturer Interface</h1>
       
-      {!accounts.length ? (
-        <div className="p-4 bg-red-100 text-red-700 rounded-md mb-6">
-          No Ethereum accounts connected. Please connect your wallet.
-        </div>
-      ) : (
-        <div className="p-4 bg-green-100 text-green-700 rounded-md mb-6">
-          Connected account: {accounts[0]}
-        </div>
-      )}
-
       {transactionStatus && (
-        <div className={`p-4 rounded-md mb-6 ${
+        <div className={`p-2 rounded-md mb-2 text-sm ${
           transactionStatus.includes('pending') ? 'bg-yellow-100 text-yellow-700' :
           transactionStatus.startsWith('error') ? 'bg-red-100 text-red-700' :
           'bg-green-100 text-green-700'
@@ -267,424 +258,432 @@ function Manufacturer() {
       )}
       
       {!currentLotId ? (
-        <form className="space-y-6">
-          {/* Lot Details Section */}
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h2 className="text-xl font-semibold mb-4">Lot Details</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Medicine Name</label>
-                <input
-                  type="text"
-                  name="nomMedicament"
-                  value={lotDetails.nomMedicament}
-                  onChange={handleLotDetailsChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Active Substance</label>
-                <input
-                  type="text"
-                  name="substanceActive"
-                  value={lotDetails.substanceActive}
-                  onChange={handleLotDetailsChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Form</label>
-                <input
-                  type="text"
-                  name="forme"
-                  value={lotDetails.forme}
-                  onChange={handleLotDetailsChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Manufacturing Date</label>
-                <input
-                  type="date"
-                  name="dateFabrication"
-                  value={lotDetails.dateFabrication}
-                  onChange={handleLotDetailsChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Expiration Date</label>
-                <input
-                  type="date"
-                  name="datePeremption"
-                  value={lotDetails.datePeremption}
-                  onChange={handleLotDetailsChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Manufacturer Name</label>
-                <input
-                  type="text"
-                  name="nomFabricant"
-                  value={lotDetails.nomFabricant}
-                  onChange={handleLotDetailsChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Country of Origin</label>
-                <input
-                  type="text"
-                  name="paysOrigine"
-                  value={lotDetails.paysOrigine}
-                  onChange={handleLotDetailsChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">AMM Number</label>
-                <input
-                  type="text"
-                  name="amm"
-                  value={lotDetails.amm}
-                  onChange={handleLotDetailsChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Conservation Conditions Section */}
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h2 className="text-xl font-semibold mb-4">Conservation Conditions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Max Temperature (°C)</label>
-                <input
-                  type="number"
-                  name="temperatureMax"
-                  value={conservation.temperatureMax}
-                  onChange={handleConservationChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Min Temperature (°C)</label>
-                <input
-                  type="number"
-                  name="temperatureMin"
-                  value={conservation.temperatureMin}
-                  onChange={handleConservationChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Max Humidity (%)</label>
-                <input
-                  type="number"
-                  name="humiditeMax"
-                  value={conservation.humiditeMax}
-                  onChange={handleConservationChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  min="0"
-                  max="100"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Min Humidity (%)</label>
-                <input
-                  type="number"
-                  name="humiditeMin"
-                  value={conservation.humiditeMin}
-                  onChange={handleConservationChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                  min="0"
-                  max="100"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-          
-          {/* Raw Materials Section */}
-          <div className="bg-gray-50 p-4 rounded-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Raw Materials</h2>
-              <button
-                type="button"
-                onClick={() => setShowRawMaterials(!showRawMaterials)}
-                className="flex items-center text-blue-600"
-              >
-                {showRawMaterials ? (
-                  <>Hide <ChevronUp className="ml-1" size={16} /></>
-                ) : (
-                  <>Show <ChevronDown className="ml-1" size={16} /></>
-                )}
-              </button>
-            </div>
-            
-            {showRawMaterials && (
-              <div className="space-y-6">
-                {rawMaterials.map((material, index) => (
-                  <div key={index} className="p-4 border border-gray-200 rounded-md">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="font-medium">Raw Material #{index + 1}</h3>
-                      <button
-                        type="button"
-                        onClick={() => removeRawMaterial(index)}
-                        className="text-red-500"
-                        disabled={rawMaterials.length === 1}
-                      >
-                        <Minus size={16} />
-                      </button>
+        <div className="flex h-5/6">
+          {/* Left Side - Lot Details & Conservation */}
+          <div className="w-1/2 pr-2 overflow-y-auto">
+            <div className="space-y-3">
+              {/* Lot Details Section */}
+              <div className="bg-gray-50 p-3 rounded-md">
+                <h2 className="text-lg font-semibold mb-2">Lot Details</h2>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <label className="block text-gray-700">Medicine Name</label>
+                    <input
+                      type="text"
+                      name="nomMedicament"
+                      value={lotDetails.nomMedicament}
+                      onChange={handleLotDetailsChange}
+                      className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700">Active Substance</label>
+                    <input
+                      type="text"
+                      name="substanceActive"
+                      value={lotDetails.substanceActive}
+                      onChange={handleLotDetailsChange}
+                      className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700">Form</label>
+                    <input
+                      type="text"
+                      name="forme"
+                      value={lotDetails.forme}
+                      onChange={handleLotDetailsChange}
+                      className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="flex space-x-1">
+                    <div className="w-1/2">
+                      <label className="block text-gray-700">Manuf. Date</label>
+                      <input
+                        type="date"
+                        name="dateFabrication"
+                        value={lotDetails.dateFabrication}
+                        onChange={handleLotDetailsChange}
+                        className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                        required
+                      />
                     </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Name</label>
-                        <input
-                          type="text"
-                          name="nom"
-                          value={material.nom}
-                          onChange={(e) => handleRawMaterialChange(index, e)}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Origin</label>
-                        <input
-                          type="text"
-                          name="origine"
-                          value={material.origine}
-                          onChange={(e) => handleRawMaterialChange(index, e)}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Supplier</label>
-                        <input
-                          type="text"
-                          name="fournisseur"
-                          value={material.fournisseur}
-                          onChange={(e) => handleRawMaterialChange(index, e)}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Purity Degree</label>
-                        <input
-                          type="text"
-                          name="degrePurete"
-                          value={material.degrePurete}
-                          onChange={(e) => handleRawMaterialChange(index, e)}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Quantity Per Unit</label>
-                        <input
-                          type="text"
-                          name="quantiteParUnite"
-                          value={material.quantiteParUnite}
-                          onChange={(e) => handleRawMaterialChange(index, e)}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Analysis Certificate</label>
-                        <input
-                          type="text"
-                          name="certificatAnalyse"
-                          value={material.certificatAnalyse}
-                          onChange={(e) => handleRawMaterialChange(index, e)}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Reception Date</label>
-                        <input
-                          type="date"
-                          name="dateReception"
-                          value={material.dateReception}
-                          onChange={(e) => handleRawMaterialChange(index, e)}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Transport</label>
-                        <input
-                          type="text"
-                          name="transport"
-                          value={material.transport}
-                          onChange={(e) => handleRawMaterialChange(index, e)}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                        />
-                      </div>
+                    <div className="w-1/2">
+                      <label className="block text-gray-700">Exp. Date</label>
+                      <input
+                        type="date"
+                        name="datePeremption"
+                        value={lotDetails.datePeremption}
+                        onChange={handleLotDetailsChange}
+                        className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                        required
+                      />
                     </div>
                   </div>
-                ))}
-                
-                <div className="flex justify-center">
-                  <button
-                    type="button"
-                    onClick={addRawMaterial}
-                    className="flex items-center text-blue-600"
-                  >
-                    <Plus size={16} className="mr-1" /> Add Raw Material
-                  </button>
+                  
+                  <div>
+                    <label className="block text-gray-700">Manufacturer</label>
+                    <input
+                      type="text"
+                      name="nomFabricant"
+                      value={lotDetails.nomFabricant}
+                      onChange={handleLotDetailsChange}
+                      className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700">Country</label>
+                    <input
+                      type="text"
+                      name="paysOrigine"
+                      value={lotDetails.paysOrigine}
+                      onChange={handleLotDetailsChange}
+                      className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700">AMM Number</label>
+                    <input
+                      type="text"
+                      name="amm"
+                      value={lotDetails.amm}
+                      onChange={handleLotDetailsChange}
+                      className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
-          
-          {/* Submit Button */}
-          <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={creerLotMedicament}
-              className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={!accounts.length || transactionStatus === 'pending'}
-            >
-              {transactionStatus === 'pending' ? 'Processing...' : 'Create Lot'}
-            </button>
-          </div>
-        </form>
-      ) : (
-        <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h2 className="text-xl font-semibold mb-4">Assign Medicaments to Boxes</h2>
-            <p className="mb-4">Current Lot ID: {currentLotId}</p>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Current Conditions</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Temperature (°C)</label>
-                  <input
-                    type="number"
-                    name="temperature"
-                    value={boxConditions.temperature}
-                    onChange={handleBoxConditionsChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                    required
-                  />
+              
+              {/* Conservation Conditions Section */}
+              <div className="bg-gray-50 p-3 rounded-md">
+                <h2 className="text-lg font-semibold mb-2">Conservation Conditions</h2>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex space-x-1">
+                    <div className="w-1/2">
+                      <label className="block text-gray-700">Max Temp (°C)</label>
+                      <input
+                        type="number"
+                        name="temperatureMax"
+                        value={conservation.temperatureMax}
+                        onChange={handleConservationChange}
+                        className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                        required
+                      />
+                    </div>
+                    <div className="w-1/2">
+                      <label className="block text-gray-700">Min Temp (°C)</label>
+                      <input
+                        type="number"
+                        name="temperatureMin"
+                        value={conservation.temperatureMin}
+                        onChange={handleConservationChange}
+                        className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-1">
+                    <div className="w-1/2">
+                      <label className="block text-gray-700">Max Humidity</label>
+                      <input
+                        type="number"
+                        name="humiditeMax"
+                        value={conservation.humiditeMax}
+                        onChange={handleConservationChange}
+                        className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                        min="0"
+                        max="100"
+                        required
+                      />
+                    </div>
+                    <div className="w-1/2">
+                      <label className="block text-gray-700">Min Humidity</label>
+                      <input
+                        type="number"
+                        name="humiditeMin"
+                        value={conservation.humiditeMin}
+                        onChange={handleConservationChange}
+                        className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                        min="0"
+                        max="100"
+                        required
+                      />
+                    </div>
+                  </div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Humidity (%)</label>
-                  <input
-                    type="number"
-                    name="humidite"
-                    value={boxConditions.humidite}
-                    onChange={handleBoxConditionsChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                    min="0"
-                    max="100"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Position X</label>
-                  <input
-                    type="text"
-                    name="positionX"
-                    value={boxConditions.positionX}
-                    onChange={handleBoxConditionsChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Position Y</label>
-                  <input
-                    type="text"
-                    name="positionY"
-                    value={boxConditions.positionY}
-                    onChange={handleBoxConditionsChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                    required
-                  />
-                </div>
+              </div>
+              
+              {/* Submit Button */}
+              <div className="flex justify-center mt-4">
+                <button
+                  type="button"
+                  onClick={creerLotMedicament}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  disabled={!accounts.length || transactionStatus === 'pending'}
+                >
+                  {transactionStatus === 'pending' ? 'Processing...' : 'Create Lot'}
+                </button>
               </div>
             </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">CSV File with Medicament IDs</label>
-              <div className="flex items-center">
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileChange}
-                  className="block w-full text-sm text-gray-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-md file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100"
-                />
+          </div>
+          
+          {/* Right Side - Raw Materials */}
+          <div className="w-1/2 pl-2 overflow-y-auto">
+            <div className="bg-gray-50 p-3 rounded-md h-full">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-semibold">Raw Materials</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowRawMaterials(!showRawMaterials)}
+                  className="flex items-center text-blue-600 text-sm"
+                >
+                  {showRawMaterials ? (
+                    <>Hide <ChevronUp size={14} /></>
+                  ) : (
+                    <>Show <ChevronDown size={14} /></>
+                  )}
+                </button>
               </div>
-              {selectedFile && (
-                <p className="mt-2 text-sm text-gray-600">Selected file: {selectedFile.name}</p>
+              
+              {showRawMaterials && (
+                <div className="space-y-3">
+                  {rawMaterials.map((material, index) => (
+                    <div key={index} className="p-2 border border-gray-200 rounded-md">
+                      <div className="flex justify-between items-center mb-1">
+                        <h3 className="text-sm font-medium">Raw Material #{index + 1}</h3>
+                        <button
+                          type="button"
+                          onClick={() => removeRawMaterial(index)}
+                          className="text-red-500"
+                          disabled={rawMaterials.length === 1}
+                        >
+                          <Minus size={14} />
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <label className="block text-gray-700">Name</label>
+                          <input
+                            type="text"
+                            name="nom"
+                            value={material.nom}
+                            onChange={(e) => handleRawMaterialChange(index, e)}
+                            className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-gray-700">Origin</label>
+                          <input
+                            type="text"
+                            name="origine"
+                            value={material.origine}
+                            onChange={(e) => handleRawMaterialChange(index, e)}
+                            className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-gray-700">Supplier</label>
+                          <input
+                            type="text"
+                            name="fournisseur"
+                            value={material.fournisseur}
+                            onChange={(e) => handleRawMaterialChange(index, e)}
+                            className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-gray-700">Purity</label>
+                          <input
+                            type="text"
+                            name="degrePurete"
+                            value={material.degrePurete}
+                            onChange={(e) => handleRawMaterialChange(index, e)}
+                            className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-gray-700">Quantity/Unit</label>
+                          <input
+                            type="text"
+                            name="quantiteParUnite"
+                            value={material.quantiteParUnite}
+                            onChange={(e) => handleRawMaterialChange(index, e)}
+                            className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-gray-700">Analysis Cert.</label>
+                          <input
+                            type="text"
+                            name="certificatAnalyse"
+                            value={material.certificatAnalyse}
+                            onChange={(e) => handleRawMaterialChange(index, e)}
+                            className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-gray-700">Reception Date</label>
+                          <input
+                            type="date"
+                            name="dateReception"
+                            value={material.dateReception}
+                            onChange={(e) => handleRawMaterialChange(index, e)}
+                            className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-gray-700">Transport</label>
+                          <input
+                            type="text"
+                            name="transport"
+                            value={material.transport}
+                            onChange={(e) => handleRawMaterialChange(index, e)}
+                            className="block w-full px-2 py-1 border border-gray-300 rounded-md"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={addRawMaterial}
+                      className="flex items-center text-blue-600 text-sm"
+                    >
+                      <Plus size={14} className="mr-1" /> Add Raw Material
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
-            
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={handleAssign}
-                className="flex items-center px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                disabled={!selectedFile || transactionStatus === 'pending-assign'}
-              >
-                <Upload size={16} className="mr-2" />
-                {transactionStatus === 'pending-assign' ? 'Assigning...' : 'Assign Medicaments'}
-              </button>
-            </div>
           </div>
-          
-          <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={() => setCurrentLotId(null)}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-            >
-              Back to Lot Creation
-            </button>
+        </div>
+      ) : (
+        <div className="flex h-5/6">
+          <div className="w-full">
+            <div className="bg-gray-50 p-4 rounded-md">
+              <h2 className="text-lg font-semibold mb-2">Assign Medicaments to Boxes</h2>
+              <p className="mb-2 text-sm">Current Lot ID: {currentLotId}</p>
+              
+              <div className="mb-3">
+                <h3 className="text-sm font-medium text-gray-700 mb-1">Current Conditions</h3>
+                <div className="grid grid-cols-4 gap-2">
+                  <div>
+                    <label className="block text-xs text-gray-700">Temperature</label>
+                    <input
+                      type="number"
+                      name="temperature"
+                      value={boxConditions.temperature}
+                      onChange={handleBoxConditionsChange}
+                      className="block w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs text-gray-700">Humidity</label>
+                    <input
+                      type="number"
+                      name="humidite"
+                      value={boxConditions.humidite}
+                      onChange={handleBoxConditionsChange}
+                      className="block w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
+                      min="0"
+                      max="100"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs text-gray-700">Position X</label>
+                    <input
+                      type="text"
+                      name="positionX"
+                      value={boxConditions.positionX}
+                      onChange={handleBoxConditionsChange}
+                      className="block w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs text-gray-700">Position Y</label>
+                    <input
+                      type="text"
+                      name="positionY"
+                      value={boxConditions.positionY}
+                      onChange={handleBoxConditionsChange}
+                      className="block w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">CSV File with Medicament IDs</label>
+                <div className="flex items-center">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    className="block w-full text-xs text-gray-500
+                      file:mr-3 file:py-1 file:px-3
+                      file:rounded-md file:border-0
+                      file:text-xs file:font-semibold
+                      file:bg-blue-50 file:text-blue-700
+                      hover:file:bg-blue-100"
+                  />
+                </div>
+                {selectedFile && (
+                  <p className="mt-1 text-xs text-gray-600">Selected file: {selectedFile.name}</p>
+                )}
+              </div>
+              
+              <div className="flex justify-center space-x-3">
+                <button
+                  type="button"
+                  onClick={handleAssign}
+                  className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                  disabled={!selectedFile || transactionStatus === 'pending-assign'}
+                >
+                  <Upload size={14} className="mr-1" />
+                  {transactionStatus === 'pending-assign' ? 'Assigning...' : 'Assign Medicaments'}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setCurrentLotId(null)}
+                  className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm"
+                >
+                  Back to Lot Creation
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
 }
-
-export default Manufacturer;

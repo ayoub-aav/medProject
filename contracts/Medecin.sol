@@ -63,6 +63,11 @@ contract Medecin {
         uint256 timestampCreation;
     }
 
+    struct Box {
+        string boxId;
+        string[] medicamentIds;
+    }
+
     // Storage
     mapping(uint256 => LotMedicament) public lots;
     mapping(string => string[]) public boxToMedicaments; // Maps boxId to array of medicamentIds
@@ -122,29 +127,34 @@ contract Medecin {
     }
 
     function createAndAssignMedicaments(
-        string memory _boxId,
-        string[] memory _medicamentIds,
+        Box[] memory _boxes,
         uint256 _lotId,
         ConditionsActuelles memory _conditions
     ) public {
-        // 1. Créer les médicaments
-        for (uint i = 0; i < _medicamentIds.length; i++) {
-            medicaments[_medicamentIds[i]] = UniteMedicament({
-                medicamentId: _medicamentIds[i],
-                lotId: _lotId,
-                conditionsActuelles: _conditions,
-                timestampCreation: block.timestamp
-            });
+        // Loop through each box in the input array
+        for (uint boxIndex = 0; boxIndex < _boxes.length; boxIndex++) {
+            Box memory currentBox = _boxes[boxIndex];
+            string[] memory medicamentIds = currentBox.medicamentIds;
+            
+            // 1. Create the medicaments for this box
+            for (uint i = 0; i < medicamentIds.length; i++) {
+                medicaments[medicamentIds[i]] = UniteMedicament({
+                    medicamentId: medicamentIds[i],
+                    lotId: _lotId,
+                    conditionsActuelles: _conditions,
+                    timestampCreation: block.timestamp
+                });
 
-            emit MedicamentCreated(_medicamentIds[i], _lotId);
+                emit MedicamentCreated(medicamentIds[i], _lotId);
+            }
+
+            // 2. Associate them with the current box
+            for (uint i = 0; i < medicamentIds.length; i++) {
+                boxToMedicaments[currentBox.boxId].push(medicamentIds[i]);
+            }
+
+            emit BoxAssembled(currentBox.boxId, _lotId, medicamentIds.length);
         }
-
-        // 2. Les associer à une boîte
-        for (uint i = 0; i < _medicamentIds.length; i++) {
-            boxToMedicaments[_boxId].push(_medicamentIds[i]);
-        }
-
-        emit BoxAssembled(_boxId, _lotId, _medicamentIds.length);
     }
 
 

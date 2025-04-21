@@ -163,76 +163,161 @@ export default function Manufacturer() {
   };
 
   const handleAssign = async () => {
-    if (!selectedFile || !contractInstance || accounts.length === 0 || !currentLotId) {
-      setTransactionStatus('error: Missing required data for assignment');
+    console.log('Starting handleAssign function');
+    
+    if (!selectedFile) {
+      console.error('No file selected');
+      setTransactionStatus('error: No file selected');
       return;
     }
-
+    
+    if (!contractInstance) {
+      console.error('Contract instance not available');
+      setTransactionStatus('error: Contract instance not available');
+      return;
+    }
+    
+    if (accounts.length === 0) {
+      console.error('No accounts available');
+      setTransactionStatus('error: No accounts available');
+      return;
+    }
+    
+    if (!currentLotId) {
+      console.error('No current lot ID');
+      setTransactionStatus('error: No current lot ID');
+      return;
+    }
+  
     try {
+      console.log('Setting transaction status to pending-assign');
       setTransactionStatus('pending-assign');
       
-      const boxMappings = await processMedicamentCSVFile(selectedFile);
+      // Process CSV file
+      console.log('Starting CSV file processing');
+      const boxes = await processMedicamentCSVFile(selectedFile);
+      console.log('CSV processing completed. Boxes data:', boxes);
       
-      // Prepare conditions data
+      // Validate boxes data
+      if (!boxes || !Array.isArray(boxes) || boxes.length === 0) {
+        console.error('Invalid boxes data from CSV:', boxes);
+        throw new Error('Invalid boxes data from CSV');
+      }
+      
+      // Prepare conditions data with proper BigInt conversion
+      console.log('Preparing conditions data');
       const conditionsData = {
-        temperature: parseInt(boxConditions.temperature),
-        humidite: parseInt(boxConditions.humidite),
-        positionX: boxConditions.positionX,
-        positionY: boxConditions.positionY,
-        timestamp: Math.floor(Date.now() / 1000)
+        temperature: BigInt(parseInt(boxConditions.temperature)),
+        humidite: BigInt(parseInt(boxConditions.humidite)),
+        positionX: boxConditions.positionX.toString(),
+        positionY: boxConditions.positionY.toString(),
+        timestamp: BigInt(Math.floor(Date.now() / 1000))
       };
-
-      // Convert boxMappings to an array of Box objects
-      const boxes = Object.keys(boxMappings).map(boxId => ({
-        boxId: boxId,
-        medicamentIds: boxMappings[boxId]
-      }));
-
-      // Call the contract function with the array of boxes
-      await contractInstance.methods
-        .createAndAssignMedicaments(
-          boxes,
-          currentLotId,
-          conditionsData
-        )
-        .send({ from: accounts[0] });
+      console.log('Conditions data prepared:', conditionsData);
+    
+      // Estimate gas first
+      console.log('Estimating gas...');
+      let gasEstimate;
+      try {
+        gasEstimate = await contractInstance.methods
+          .createAndAssignMedicaments(boxes, BigInt(currentLotId), conditionsData)
+          .estimateGas({ from: accounts[0] });
+        console.log('Gas estimate successful:', gasEstimate);
+      } catch (estimateError) {
+        console.error('Gas estimate failed:', estimateError);
+        throw new Error(`Gas estimate failed: ${estimateError.message}`);
+      }
+    
+      // Add 20% buffer to the gas estimate
+      const gasWithBuffer = Math.floor(Number(gasEstimate) * 1.2);
+      console.log('Gas with buffer:', gasWithBuffer);
+    
+      // Get current gas price and add 10% to ensure timely processing
+      console.log('Getting gas price...');
+      const gasPrice = await web3Instance.eth.getGasPrice();
+      console.log('Current gas price:', gasPrice);
+      const adjustedGasPrice = BigInt(Math.floor(Number(gasPrice) * 1.1));
+      console.log('Adjusted gas price:', adjustedGasPrice);
+    
+      // Execute the transaction with proper gas settings
+      console.log('Sending transaction...');
+      console.log('Transaction details:', {
+        boxes,
+        currentLotId: BigInt(currentLotId),
+        conditionsData,
+        from: accounts[0],
+        gas: gasWithBuffer,
+        gasPrice: adjustedGasPrice
+      });
       
+      const receipt = await contractInstance.methods
+        .createAndAssignMedicaments(boxes, BigInt(currentLotId), conditionsData)
+        .send({
+          from: accounts[0],
+          gas: gasWithBuffer,
+          gasPrice: adjustedGasPrice
+        });
+      
+      console.log('Transaction successful. Receipt:', receipt);
       setTransactionStatus('success-assign');
+      resetForm();
       
-      // Reset after successful assignment
-      setSelectedFile(null);
-      setCurrentLotId(null);
-      setLotDetails({
-        nomMedicament: '',
-        substanceActive: '',
-        forme: '',
-        dateFabrication: '',
-        datePeremption: '',
-        nomFabricant: '',
-        paysOrigine: '',
-        amm: ''
-      });
-      setConservation({
-        temperatureMax: "",
-        temperatureMin: "",
-        humiditeMax: "",
-        humiditeMin: ""
-      });
-      setRawMaterials([{
-        nom: '',
-        origine: '',
-        fournisseur: '',
-        degrePurete: '',
-        quantiteParUnite: '',
-        certificatAnalyse: '',
-        dateReception: '',
-        transport: ''
-      }]);
-
     } catch (error) {
-      console.error('Error during assignment:', error);
-      setTransactionStatus('error-assign: ' + error.message);
+      console.error('Error in transaction:', error);
+      
+      // Detailed error logging
+      if (error.receipt) {
+        console.error('Transaction receipt:', error.receipt);
+      }
+      if (error.data) {
+        console.error('Error data:', error.data);
+      }
+      if (error.stack) {
+        console.error('Error stack:', error.stack);
+      }
+      
+      let errorMessage = 'Transaction failed';
+      if (error.receipt && error.receipt.gasUsed) {
+        errorMessage += ` (Gas used: ${error.receipt.gasUsed})`;
+      }
+      if (error.message) {
+        errorMessage += `: ${error.message.split('\n')[0]}`;
+      }
+      
+      setTransactionStatus(`error-assign: ${errorMessage}`);
     }
+  };
+  
+  // Helper function for resetting form
+  const resetForm = () => {
+    setSelectedFile(null);
+    setCurrentLotId(null);
+    setLotDetails({
+      nomMedicament: '',
+      substanceActive: '',
+      forme: '',
+      dateFabrication: '',
+      datePeremption: '',
+      nomFabricant: '',
+      paysOrigine: '',
+      amm: ''
+    });
+    setConservation({
+      temperatureMax: "",
+      temperatureMin: "",
+      humiditeMax: "",
+      humiditeMin: ""
+    });
+    setRawMaterials([{
+      nom: '',
+      origine: '',
+      fournisseur: '',
+      degrePurete: '',
+      quantiteParUnite: '',
+      certificatAnalyse: '',
+      dateReception: '',
+      transport: ''
+    }]);
   };
 
   if (isLoading) {

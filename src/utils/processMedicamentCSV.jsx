@@ -6,8 +6,10 @@ export const processMedicamentCSVFile = (csvFile) => {
       try {
         const content = event.target.result;
         const lines = content.split('\n');
-        const boxMappings = {};
+        const boxes = []; // This will be our array of Box structs
 
+        // First pass: collect all boxIds and their medicamentIds
+        const boxMappings = {};
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
@@ -22,7 +24,15 @@ export const processMedicamentCSVFile = (csvFile) => {
           boxMappings[boxId].push(medicamentId);
         }
 
-        resolve(boxMappings);
+        // Convert the mappings into the required struct format
+        for (const boxId in boxMappings) {
+          boxes.push({
+            boxId: boxId,
+            medicamentIds: boxMappings[boxId]
+          });
+        }
+
+        resolve(boxes);
       } catch (error) {
         reject(error);
       }

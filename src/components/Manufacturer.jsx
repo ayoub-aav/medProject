@@ -59,7 +59,7 @@ export default function Manufacturer() {
         setContractInstance(contractInstance);
         setAccounts(accounts);
       } catch (error) {
-        console.error("Failed to load web3:", error);
+        // Keep error handling but remove console.error
       } finally {
         setIsLoading(false);
       }
@@ -154,58 +154,29 @@ export default function Manufacturer() {
       setCurrentLotId(lotId);
       
       setTransactionStatus('success');
-      console.log('Transaction successful:', tx);
-
     } catch (error) {
-      console.error('Error creating lot:', error);
       setTransactionStatus('error: ' + error.message);
     }
   };
 
   const handleAssign = async () => {
-    console.log('Starting handleAssign function');
-    
-    if (!selectedFile) {
-      console.error('No file selected');
-      setTransactionStatus('error: No file selected');
-      return;
-    }
-    
-    if (!contractInstance) {
-      console.error('Contract instance not available');
-      setTransactionStatus('error: Contract instance not available');
-      return;
-    }
-    
-    if (accounts.length === 0) {
-      console.error('No accounts available');
-      setTransactionStatus('error: No accounts available');
-      return;
-    }
-    
-    if (!currentLotId) {
-      console.error('No current lot ID');
-      setTransactionStatus('error: No current lot ID');
+    if (!selectedFile || !contractInstance || accounts.length === 0 || !currentLotId) {
+      setTransactionStatus('error: Missing required data');
       return;
     }
   
     try {
-      console.log('Setting transaction status to pending-assign');
       setTransactionStatus('pending-assign');
-      
+  
       // Process CSV file
-      console.log('Starting CSV file processing');
       const boxes = await processMedicamentCSVFile(selectedFile);
-      console.log('CSV processing completed. Boxes data:', boxes);
-      
+  
       // Validate boxes data
       if (!boxes || !Array.isArray(boxes) || boxes.length === 0) {
-        console.error('Invalid boxes data from CSV:', boxes);
         throw new Error('Invalid boxes data from CSV');
       }
-      
+  
       // Prepare conditions data with proper BigInt conversion
-      console.log('Preparing conditions data');
       const conditionsData = {
         temperature: BigInt(parseInt(boxConditions.temperature)),
         humidite: BigInt(parseInt(boxConditions.humidite)),
@@ -213,69 +184,42 @@ export default function Manufacturer() {
         positionY: boxConditions.positionY.toString(),
         timestamp: BigInt(Math.floor(Date.now() / 1000))
       };
-      console.log('Conditions data prepared:', conditionsData);
-    
-      // Estimate gas first
-      console.log('Estimating gas...');
-      let gasEstimate;
-      try {
-        gasEstimate = await contractInstance.methods
-          .createAndAssignMedicaments(boxes, BigInt(currentLotId), conditionsData)
-          .estimateGas({ from: accounts[0] });
-        console.log('Gas estimate successful:', gasEstimate);
-      } catch (estimateError) {
-        console.error('Gas estimate failed:', estimateError);
-        throw new Error(`Gas estimate failed: ${estimateError.message}`);
+  
+      // Define batch size
+      const batchSize = 20;
+      const totalBatches = Math.ceil(boxes.length / batchSize);
+  
+      for (let i = 0; i < totalBatches; i++) {
+        const start = i * batchSize;
+        const end = Math.min(start + batchSize, boxes.length);
+        const batchBoxes = boxes.slice(start, end);
+  
+        // Estimate gas for the batch
+        let gasEstimate;
+        try {
+          gasEstimate = await contractInstance.methods
+            .createAndAssignMedicaments(batchBoxes, BigInt(currentLotId), conditionsData)
+            .estimateGas({ from: accounts[0] });
+        } catch (estimateError) {
+          throw new Error(`Gas estimate failed for batch: ${estimateError.message}`);
+        }
+  
+        // Add a 20% buffer to the gas estimate
+        const gasWithBuffer = Math.floor(Number(gasEstimate) * 1.2);
+  
+        // Execute transaction for the batch
+        await contractInstance.methods
+          .createAndAssignMedicaments(batchBoxes, BigInt(currentLotId), conditionsData)
+          .send({
+            from: accounts[0],
+            gas: gasWithBuffer
+          });
       }
-    
-      // Add 20% buffer to the gas estimate
-      const gasWithBuffer = Math.floor(Number(gasEstimate) * 1.2);
-      console.log('Gas with buffer:', gasWithBuffer);
-    
-      // Get current gas price and add 10% to ensure timely processing
-      console.log('Getting gas price...');
-      const gasPrice = await web3Instance.eth.getGasPrice();
-      console.log('Current gas price:', gasPrice);
-      const adjustedGasPrice = BigInt(Math.floor(Number(gasPrice) * 1.1));
-      console.log('Adjusted gas price:', adjustedGasPrice);
-    
-      // Execute the transaction with proper gas settings
-      console.log('Sending transaction...');
-      console.log('Transaction details:', {
-        boxes,
-        currentLotId: BigInt(currentLotId),
-        conditionsData,
-        from: accounts[0],
-        gas: gasWithBuffer,
-        gasPrice: adjustedGasPrice
-      });
-      
-      const receipt = await contractInstance.methods
-        .createAndAssignMedicaments(boxes, BigInt(currentLotId), conditionsData)
-        .send({
-          from: accounts[0],
-          gas: gasWithBuffer,
-          gasPrice: adjustedGasPrice
-        });
-      
-      console.log('Transaction successful. Receipt:', receipt);
+  
       setTransactionStatus('success-assign');
       resetForm();
-      
+  
     } catch (error) {
-      console.error('Error in transaction:', error);
-      
-      // Detailed error logging
-      if (error.receipt) {
-        console.error('Transaction receipt:', error.receipt);
-      }
-      if (error.data) {
-        console.error('Error data:', error.data);
-      }
-      if (error.stack) {
-        console.error('Error stack:', error.stack);
-      }
-      
       let errorMessage = 'Transaction failed';
       if (error.receipt && error.receipt.gasUsed) {
         errorMessage += ` (Gas used: ${error.receipt.gasUsed})`;
@@ -283,7 +227,7 @@ export default function Manufacturer() {
       if (error.message) {
         errorMessage += `: ${error.message.split('\n')[0]}`;
       }
-      
+  
       setTransactionStatus(`error-assign: ${errorMessage}`);
     }
   };

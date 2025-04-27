@@ -170,4 +170,8 @@ contract Medecin {
         UniteMedicament memory unit = medicaments[_medicamentId];
         return (unit);
     }
+
+    function getMatieresPremieresForLot(uint256 _lotId) public view returns (MatierePremiere[] memory) {
+        return lots[_lotId].matieresPremieresLot;
+    }
 }

@@ -3,13 +3,12 @@ import networks from "../utils/networks";
 import { CheckCircle, XCircle, ChevronRight } from 'lucide-react';
 import Web3 from 'web3';
 import { initWeb3 } from '../utils/web3Connection_User';
-
+import { useNavigate } from 'react-router-dom'; // Import useNavigate hook
 
 function Login() {
-  const[web3Instance, setWeb3Instance]= useState();
-  const[contractInstance, setContractInstance]= useState();
-  const[accounts, setAccounts]= useState();
-
+  const [web3Instance, setWeb3Instance] = useState();
+  const [contractInstance, setContractInstance] = useState();
+  const [accounts, setAccounts] = useState();
 
   const [isNetwork, setNetwork] = useState(false);
   const [isInstalled, setInstalled] = useState(false);
@@ -19,17 +18,15 @@ function Login() {
   const [userName, setUserName] = useState("");
   const [userRole, setUserRole] = useState("");
   const [isUser, setIsUser] = useState(false);
-
-
   
-  
+  const navigate = useNavigate(); // Initialize useNavigate hook
+
   const checkUser = async () => {
     if (window.ethereum && contractInstance && userAccount) {
       try {
         const userAddresses = await contractInstance.methods.getAllUserAddresses().call();
         if (userAddresses.some(addr => addr.toLowerCase() === userAccount.toLowerCase())) {
           setIsUser(true);
-          console.log(await contractInstance.methods.getUser(userAccount).call())
           const userData = await contractInstance.methods.getUser(userAccount).call();
           setUserName(userData.name);
           setUserRole(userData.role);
@@ -40,15 +37,13 @@ function Login() {
     }
   };
 
-
-
   const checkNetwork = async (NetworkName) => {
     if (window.ethereum) {
       const chainId = await window.ethereum.request({ method: "eth_chainId" });
       const targetnetwork = networks[NetworkName]?.chainId;
       
-      if(!targetnetwork){
-        console.error(`network"${NetworkName}"is not defined in the config`);
+      if (!targetnetwork) {
+        console.error(`network "${NetworkName}" is not defined in the config`);
         return false;
       }
       return chainId.toLowerCase() === targetnetwork.toLowerCase();
@@ -57,7 +52,7 @@ function Login() {
   };
 
   const changeNetwork = async ({ networkName, setError }) => {
-    try {      
+    try {
       await window.ethereum.request({
         method: "wallet_addEthereumChain",
         params: [
@@ -74,33 +69,26 @@ function Login() {
   const handleNetworkSwitch = async (networkName) => {
     setError();
     await changeNetwork({ networkName, setError });
-
     window.location.reload();
-
   };
 
   const networkChanged = (chainId) => {
     console.log({ chainId });
   };
 
-
-  const navigateTo = () => {
-    const link = `/${userRole}`;
-    window.location.href = link;
+  const handleNavigation = (path) => {
+    navigate(path); // Use useNavigate to navigate to the specified path
   };
 
-  
-
-  useEffect(()=>{
-    const load = async ()=>{
-      const{ web3Instance, contractInstance, accounts }= await initWeb3();
+  useEffect(() => {
+    const load = async () => {
+      const { web3Instance, contractInstance, accounts } = await initWeb3();
       setWeb3Instance(web3Instance);
       setContractInstance(contractInstance);
       setAccounts(accounts);
     }
-
     load();
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (contractInstance && userAccount) {
@@ -118,25 +106,23 @@ function Login() {
   }, []);
 
   useEffect(() => {
-    if(window.ethereum && window.ethereum.isMetaMask){
-        setInstalled(true);
-
-        const getAccount = async () => {
-            try{
-                const accounts = await window.ethereum.request({method: "eth_requestAccounts"});
-                setUserAccount(accounts[0]);
-            }catch(error){
-                console.error("error: ", error);
-            }
-        };
-        getAccount();
+    if (window.ethereum && window.ethereum.isMetaMask) {
+      setInstalled(true);
+      const getAccount = async () => {
+        try {
+          const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+          setUserAccount(accounts[0]);
+        } catch (error) {
+          console.error("error: ", error);
+        }
+      };
+      getAccount();
     }
   }, []);
 
   useEffect(() => {
     if (window.ethereum) {
       window.ethereum.on("chainChanged", networkChanged);
-  
       return () => {
         window.ethereum.removeListener("chainChanged", networkChanged);
       };
@@ -173,7 +159,7 @@ function Login() {
                 </div>
                 <p className="text-lg text-gray-600 mb-6">You're successfully authenticated!</p>
                 <button 
-                  onClick={navigateTo}
+                  onClick={() => handleNavigation(`/${userRole}`)}
                   className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-lg font-medium transition-all hover:shadow-lg hover:scale-105">
                   <span>Continue</span>
                   <ChevronRight className="ml-2 h-5 w-5" />
@@ -183,6 +169,25 @@ function Login() {
           )}
           
           <div className={`${allConditionsMet ? 'w-1/2 pl-10' : 'w-full'} flex flex-col justify-center`}>
+            {/* Buttons for navigation */}
+            <div className="space-y-4 mb-8">
+              <button 
+                onClick={() => handleNavigation("/admin")}
+                className="px-4 py-2 bg-blue-500 text-white rounded transition duration-300 hover:bg-blue-600">Admin</button>
+              <button 
+                onClick={() => handleNavigation("/Manufacturer")}
+                className="px-4 py-2 bg-blue-500 text-white rounded transition duration-300 hover:bg-blue-600">Manufacturer</button>
+              <button 
+                onClick={() => handleNavigation("/Distributor")}
+                className="px-4 py-2 bg-blue-500 text-white rounded transition duration-300 hover:bg-blue-600">Distributor</button>
+              <button 
+                onClick={() => handleNavigation("/Pharmacy")}
+                className="px-4 py-2 bg-blue-500 text-white rounded transition duration-300 hover:bg-blue-600">Pharmacy</button>
+              <button 
+                onClick={() => handleNavigation("/Consumer")}
+                className="px-4 py-2 bg-blue-500 text-white rounded transition duration-300 hover:bg-blue-600">Consumer</button>
+            </div>
+
             <div className="space-y-8 text-lg">
               <div className="flex items-center space-x-5">
                 {isInstalled ? (
@@ -237,7 +242,7 @@ function Login() {
                   <p className="font-medium">Wallet Address</p>
                   {userAccount ? (
                     <p className="text-base font-mono bg-gray-100 p-3 rounded mt-2 truncate">
-                      {userAccount.slice(0,8)}...
+                      {userAccount.slice(0, 8)}...
                     </p>
                   ) : (
                     <p className="text-base text-gray-600 mt-2">Not connected</p>

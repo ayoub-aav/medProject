@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Card, Typography } from "@material-tailwind/react";
 import { BarChart, PieChart, Bar, Pie, Cell, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import { QrCode, Pill, ShoppingCart, ClipboardList, CheckCircle, Camera, CameraOff } from 'lucide-react';
-import QrScanner from 'qr-scanner';
 
 function Pharmacy() {
   // State management
   const [activeTab, setActiveTab] = useState('scan');
   const [scanning, setScanning] = useState(false);
   const [scannedMedicines, setScannedMedicines] = useState([]);
+  const [sensorData, setSensorData] = useState({});
+  const [timestamp, setTimestamp] = useState('');
   const [cameraState, setCameraState] = useState({
     isActive: false,
     error: null,
@@ -16,7 +16,6 @@ function Pharmacy() {
   });
   const [message, setMessage] = useState({ text: '', type: '' });
   const videoRef = useRef(null);
-  const qrScannerRef = useRef(null);
 
   // Sample data
   const sampleMedicines = [
@@ -40,18 +39,27 @@ function Pharmacy() {
     }
   ];
 
-  // Initialize with sample data
+  // Initialize with sample data and fetch sensor data
   useEffect(() => {
     setScannedMedicines(sampleMedicines);
     checkCameraAvailability();
+    fetchSensorData(); // Fetch sensor data
   }, []);
 
   // Check camera availability
   const checkCameraAvailability = async () => {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        setCameraState({
+          ...cameraState,
+          error: 'Camera API not supported in this browser'
+        });
+        return;
+      }
+
       const devices = await navigator.mediaDevices.enumerateDevices();
       const cameras = devices.filter(device => device.kind === 'videoinput');
-      
+
       setCameraState({
         ...cameraState,
         availableCameras: cameras,
@@ -65,41 +73,52 @@ function Pharmacy() {
     }
   };
 
+  // Fetch sensor data
+  const fetchSensorData = async () => {
+    try {
+      const response = await fetch('http://localhost:1880/pharmacy/sensors'); // Update URL as needed
+      const data = await response.json();
+      setSensorData(data);
+      setTimestamp(data.timestamp); // Set timestamp
+    } catch (error) {
+      console.error('Error fetching sensor data:', error);
+    }
+  };
+
   // Start scanning
   const startScanning = async () => {
     try {
-      // Verify camera access
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      stream.getTracks().forEach(track => track.stop());
-
-      // Verify video element
       if (!videoRef.current) {
         throw new Error('Video element not ready');
       }
 
-      // Initialize scanner
-      qrScannerRef.current = new QrScanner(
-        videoRef.current,
-        result => {
-          handleScanResult(result);
-        },
-        {
-          preferredCamera: 'environment',
-          highlightScanRegion: true,
-          maxScansPerSecond: 5,
-          returnDetailedScanResult: true
-        }
-      );
+      // Try to get user media
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
 
-      await qrScannerRef.current.start();
-      
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+
+        setCameraState({
+          ...cameraState,
+          isActive: true,
+          error: null
+        });
+      } catch (err) {
+        throw new Error(`Could not access camera: ${err.message}`);
+      }
+
       setScanning(true);
-      setCameraState({
-        ...cameraState,
-        isActive: true,
-        error: null
-      });
       setMessage({ text: 'Scanning... Point camera at QR code', type: 'info' });
+
+      // Simulate finding a QR code after 3 seconds (for demo purposes)
+      setTimeout(() => {
+        handleScanResult({});
+      }, 3000);
 
     } catch (err) {
       console.error('Scanner error:', err);
@@ -115,11 +134,12 @@ function Pharmacy() {
 
   // Stop scanning
   const stopScanning = () => {
-    if (qrScannerRef.current) {
-      qrScannerRef.current.stop();
-      qrScannerRef.current.destroy();
-      qrScannerRef.current = null;
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+      videoRef.current.srcObject = null;
     }
+
     setScanning(false);
     setCameraState({
       ...cameraState,
@@ -130,26 +150,22 @@ function Pharmacy() {
   // Handle scan results
   const handleScanResult = (result) => {
     stopScanning();
-    
+
     // For demo purposes - in real app you would process the QR data
     const randomMed = sampleMedicines[Math.floor(Math.random() * sampleMedicines.length)];
     const newMedicine = {
       ...randomMed,
+      id: `med-${Math.floor(Math.random() * 1000)}`,
       scannedAt: new Date().toISOString()
     };
 
     setScannedMedicines(prev => [newMedicine, ...prev]);
-    setMessage({ 
-      text: `Scanned: ${newMedicine.name} (${newMedicine.batch})`, 
-      type: 'success' 
+    setMessage({
+      text: `Scanned: ${newMedicine.name} (${newMedicine.batch})`,
+      type: 'success'
     });
 
     setTimeout(() => setMessage({ text: '', type: '' }), 5000);
-  };
-
-  // Simulate scan for demo
-  const simulateScan = () => {
-    handleScanResult({ data: JSON.stringify(sampleMedicines[0]) });
   };
 
   // Clean up
@@ -164,22 +180,22 @@ function Pharmacy() {
   }));
 
   const expiryStatusData = [
-    { 
-      name: 'Valid', 
-      value: scannedMedicines.filter(m => new Date(m.expiry) > new Date()).length 
+    {
+      name: 'Valid',
+      value: scannedMedicines.filter(m => new Date(m.expiry) > new Date()).length
     },
-    { 
-      name: 'Expiring Soon', 
+    {
+      name: 'Expiring Soon',
       value: scannedMedicines.filter(m => {
         const expiryDate = new Date(m.expiry);
         const nextMonth = new Date();
         nextMonth.setMonth(nextMonth.getMonth() + 1);
         return expiryDate > new Date() && expiryDate <= nextMonth;
-      }).length 
+      }).length
     },
-    { 
-      name: 'Expired', 
-      value: scannedMedicines.filter(m => new Date(m.expiry) <= new Date()).length 
+    {
+      name: 'Expired',
+      value: scannedMedicines.filter(m => new Date(m.expiry) <= new Date()).length
     }
   ];
 
@@ -196,18 +212,14 @@ function Pharmacy() {
             </div>
             <h1 className="text-3xl font-bold text-gray-800">PharmaScan Pro</h1>
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            {cameraState.isActive ? (
-              <>
-                <Camera className="h-5 w-5 text-green-500" />
-                <span>Camera Active</span>
-              </>
-            ) : (
-              <>
-                <CameraOff className="h-5 w-5 text-red-500" />
-                <span>Camera Inactive</span>
-              </>
-            )}
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <span>🌡 {sensorData.temperature || '22°C'}</span>
+              <span>💧 {sensorData.humidity || '45%'}</span>
+            </div>
+            <div className="text-gray-500">
+              {timestamp ? new Date(timestamp).toLocaleTimeString('en-MA') : 'N/A'}
+            </div>
           </div>
         </div>
 
@@ -262,12 +274,12 @@ function Pharmacy() {
 
         {/* Tab Content */}
         {activeTab === 'scan' ? (
-          <Card className="p-6 rounded-xl shadow-sm">
+          <div className="p-6 rounded-xl shadow-sm bg-white">
             <div className="space-y-8">
-              <Typography variant="h3" className="flex items-center mb-6">
+              <h3 className="flex items-center mb-6 text-xl font-bold">
                 <QrCode className="mr-2 h-6 w-6 text-blue-600" />
                 Medicine Scanner
-              </Typography>
+              </h3>
               
               {/* Scanner View */}
               <div className="relative w-full aspect-video mb-6 bg-black rounded-lg overflow-hidden">
@@ -281,9 +293,9 @@ function Pharmacy() {
                 {!scanning && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-black bg-opacity-70">
                     <QrCode className="h-24 w-24 opacity-50 mb-4" />
-                    <Typography className="text-lg opacity-75">
+                    <p className="text-lg opacity-75">
                       {cameraState.error ? cameraState.error : 'Camera preview will appear when scanning'}
-                    </Typography>
+                    </p>
                   </div>
                 )}
                 
@@ -298,95 +310,76 @@ function Pharmacy() {
               <div className="flex flex-col sm:flex-row gap-4">
                 {!scanning ? (
                   <>
-                    <Button
+                    <button
                       onClick={startScanning}
-                      className="flex-1 flex items-center justify-center gap-2 py-3"
-                      color="blue"
+                      className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
                       disabled={!!cameraState.error}
                     >
                       <QrCode className="h-5 w-5" />
                       Start Scanning
-                    </Button>
-                    <Button
-                      onClick={simulateScan}
-                      variant="outlined"
-                      className="flex-1 flex items-center justify-center py-3"
-                      color="blue"
+                    </button>
+                    <button
+                      onClick={() => handleScanResult({})} // Simulate scan
+                      className="flex-1 flex items-center justify-center py-3 px-4 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
                     >
                       Simulate Scan
-                    </Button>
+                    </button>
                   </>
                 ) : (
-                  <Button
+                  <button
                     onClick={stopScanning}
-                    className="flex-1 flex items-center justify-center py-3"
-                    color="red"
+                    className="flex-1 flex items-center justify-center py-3 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                   >
                     Stop Scanning
-                  </Button>
+                  </button>
                 )}
               </div>
-
-              {/* Camera Debug Info */}
-              <details className="mt-6 text-sm text-gray-600">
-                <summary className="cursor-pointer">Camera Information</summary>
-                <div className="mt-2 p-3 bg-gray-100 rounded-lg">
-                  <p><strong>Status:</strong> {cameraState.isActive ? 'Active' : 'Inactive'}</p>
-                  {cameraState.error && <p><strong>Error:</strong> {cameraState.error}</p>}
-                  <p><strong>Available Cameras:</strong> {cameraState.availableCameras.length}</p>
-                  <ul className="list-disc pl-5 mt-1">
-                    {cameraState.availableCameras.map((cam, i) => (
-                      <li key={i}>{cam.label || `Camera ${i+1}`}</li>
-                    ))}
-                  </ul>
-                </div>
-              </details>
 
               {/* Recently Scanned */}
               {scannedMedicines.length > 0 && (
                 <div className="mt-8">
-                  <Typography variant="h5" className="mb-4">
+                  <h5 className="mb-4 text-lg font-semibold">
                     Recently Scanned
-                  </Typography>
+                  </h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {scannedMedicines.slice(0, 3).map((medicine, index) => (
-                      <Card key={index} className="p-4 hover:shadow-md transition-shadow">
-                        <Typography variant="h6" className="mb-2">
+                      <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                        <h6 className="mb-2 font-semibold">
                           {medicine.name}
-                        </Typography>
+                        </h6>
                         <div className="space-y-2">
                           <div>
-                            <Typography variant="small" className="font-semibold">
+                            <span className="text-sm font-semibold">
                               Batch:
-                            </Typography>
-                            <Typography variant="small">
+                            </span>
+                            <span className="text-sm ml-1">
                               {medicine.batch}
-                            </Typography>
+                            </span>
                           </div>
                           <div>
-                            <Typography variant="small" className="font-semibold">
+                            <span className="text-sm font-semibold">
                               Expiry:
-                            </Typography>
-                            <Typography variant="small" className={
+                            </span>
+                            <span className={`text-sm ml-1 ${
                               new Date(medicine.expiry) < new Date() ? 'text-red-500' : 'text-green-500'
-                            }>
+                            }`}>
                               {new Date(medicine.expiry).toLocaleDateString()}
-                            </Typography>
+                            </span>
                           </div>
                         </div>
-                      </Card>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
             </div>
-          </Card>
+          </div>
         ) : activeTab === 'inventory' ? (
           <div className="space-y-6">
-            <Card className="p-6 rounded-xl shadow-sm">
-              <Typography variant="h3" className="mb-6">
+            <div className="p-6 rounded-xl shadow-sm bg-white">
+              <h3 className="mb-6 text-xl font-bold">
                 Medicine Inventory
-              </Typography>
+              </h3>
               
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -424,15 +417,15 @@ function Pharmacy() {
                   </tbody>
                 </table>
               </div>
-            </Card>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="p-6 rounded-xl shadow-sm">
-                <Typography variant="h3" className="mb-4">
+              <div className="p-6 rounded-xl shadow-sm bg-white">
+                <h3 className="mb-4 text-xl font-bold">
                   Inventory Levels
-                </Typography>
+                </h3>
                 <div className="h-80">
                   <BarChart
                     width={500}
@@ -447,12 +440,12 @@ function Pharmacy() {
                     <Bar dataKey="stock" fill="#4f46e5" />
                   </BarChart>
                 </div>
-              </Card>
+              </div>
 
-              <Card className="p-6 rounded-xl shadow-sm">
-                <Typography variant="h3" className="mb-4">
+              <div className="p-6 rounded-xl shadow-sm bg-white">
+                <h3 className="mb-4 text-xl font-bold">
                   Expiry Status
-                </Typography>
+                </h3>
                 <div className="h-80">
                   <PieChart width={500} height={300}>
                     <Pie
@@ -472,13 +465,13 @@ function Pharmacy() {
                     <Tooltip />
                   </PieChart>
                 </div>
-              </Card>
+              </div>
             </div>
 
-            <Card className="p-6 rounded-xl shadow-sm">
-              <Typography variant="h3" className="mb-4">
+            <div className="p-6 rounded-xl shadow-sm bg-white">
+              <h3 className="mb-4 text-xl font-bold">
                 Expiring Soon (Next 30 Days)
-              </Typography>
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {scannedMedicines
                   .filter(medicine => {
@@ -490,25 +483,25 @@ function Pharmacy() {
                   })
                   .slice(0, 3)
                   .map((medicine, index) => (
-                    <Card key={index} className="p-4 hover:shadow-md">
-                      <Typography variant="h6" className="text-yellow-600">
+                    <div key={index} className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md">
+                      <h6 className="text-yellow-600 font-medium">
                         {medicine.name}
-                      </Typography>
-                      <div className="mt-2 space-y-1">
-                        <Typography variant="small">
+                      </h6>
+                      <div className="mt-2 space-y-1 text-sm">
+                        <p>
                           <span className="font-semibold">Batch:</span> {medicine.batch}
-                        </Typography>
-                        <Typography variant="small">
+                        </p>
+                        <p>
                           <span className="font-semibold">Expiry:</span> {new Date(medicine.expiry).toLocaleDateString()}
-                        </Typography>
-                        <Typography variant="small">
+                        </p>
+                        <p>
                           <span className="font-semibold">Qty:</span> {medicine.quantity}
-                        </Typography>
+                        </p>
                       </div>
-                    </Card>
+                    </div>
                   ))}
               </div>
-            </Card>
+            </div>
           </div>
         )}
       </div>

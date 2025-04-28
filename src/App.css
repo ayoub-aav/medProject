@@ -1,0 +1,14 @@
+/* Fix Leaflet map tiles */
+.leaflet-container {
+    background: #f8fafc !important;
+  }
+  
+  .leaflet-tile {
+    filter: hue-rotate(15deg) saturate(1.1) !important;
+  }
+  
+  /* Popup styling */
+  .leaflet-popup-content {
+    margin: 12px !important;
+    font-family: 'Segoe UI', system-ui;
+  }

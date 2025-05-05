@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Typography, Alert, Input } from "@material-tailwind/react";
-import { Activity, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Truck, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import networks from "../utils/networks";
 import { initWeb3 as initializeWeb3 } from '../utils/web3Connection_User';
 import { initWeb3 as initializeMedecinWeb3 } from '../utils/web3Connection_medecin';
 
-function Pharmacy() {
+function Distributor() {
   const [web3Instance, setWeb3Instance] = useState(null);
   const [userContract, setUserContract] = useState(null);
   const [medecinContract, setMedecinContract] = useState(null);
@@ -15,11 +15,9 @@ function Pharmacy() {
   const [isNetwork, setNetwork] = useState(false);
   const [isInstalled, setInstalled] = useState(false);
   const [error, setError] = useState("");
-  const [storageUnitId, setStorageUnitId] = useState('');
-  const [batchId, setBatchId] = useState('');
-  const [medId, setMedId] = useState('');
+  const [iotId, setIotId] = useState('');
+  const [boxId, setBoxId] = useState('');
   const [txStatus, setTxStatus] = useState({ success: null, message: '' });
-  const [saleTxStatus, setSaleTxStatus] = useState({ success: null, message: '' });
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [userRole, setUserRole] = useState("");
 
@@ -111,7 +109,7 @@ function Pharmacy() {
           if (isUser) {
             const userData = await userContract.methods.getUser(userAccount).call();
             setUserRole(userData.role);
-            setIsAuthorized(userData.role === "Pharmacy");
+            setIsAuthorized(userData.role === "Distributor");
           }
         } catch (error) {
           console.error("Authorization check failed:", error);
@@ -121,30 +119,17 @@ function Pharmacy() {
     checkAuthorization();
   }, [userContract, userAccount]);
 
-  // Storage Assignment Handler
+  // Assignment Handler using medecin contract
   const handleAssignment = async () => {
     setTxStatus({ success: null, message: '' });
     try {
-      await medecinContract.methods.assignBoxToIoT(storageUnitId, batchId)
+      await medecinContract.methods.assignBoxToIoT(iotId, boxId)
         .send({ from: userAccount });
-      setTxStatus({ success: true, message: 'Storage unit linked successfully!' });
-      setStorageUnitId('');
-      setBatchId('');
+      setTxStatus({ success: true, message: 'Assignment successful!' });
+      setIotId('');
+      setBoxId('');
     } catch (error) {
       setTxStatus({ success: false, message: `Error: ${error.message}` });
-    }
-  };
-
-  // Medication Sale Handler
-  const handleMarkAsSold = async () => {
-    setSaleTxStatus({ success: null, message: '' });
-    try {
-      await medecinContract.methods.markMedicamentAsSold(medId)
-        .send({ from: userAccount });
-      setSaleTxStatus({ success: true, message: 'Medication marked as sold!' });
-      setMedId('');
-    } catch (error) {
-      setSaleTxStatus({ success: false, message: `Error: ${error.message}` });
     }
   };
 
@@ -156,7 +141,7 @@ function Pharmacy() {
           <div className="flex flex-col items-center mb-6">
             <AlertTriangle className="h-16 w-16 text-orange-500 mb-4" />
             <Typography variant="h4" className="mb-2">
-              Pharmacy System Requirements
+              Connection Requirements
             </Typography>
           </div>
 
@@ -168,7 +153,7 @@ function Pharmacy() {
 
             <div className="flex items-center gap-4">
               {isNetwork ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
-              <Typography>Connected to Pharmaceutical Network</Typography>
+              <Typography>Connected to Ganache Network</Typography>
               {!isNetwork && isInstalled && (
                 <Button size="sm" onClick={() => handleNetworkSwitch("ganache")}>
                   Switch Network
@@ -183,7 +168,7 @@ function Pharmacy() {
 
             <div className="flex items-center gap-4">
               {isAuthorized ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
-              <Typography>Licensed Pharmacist</Typography>
+              <Typography>Authorized {userRole}</Typography>
             </div>
           </div>
 
@@ -197,88 +182,60 @@ function Pharmacy() {
     );
   }
 
+  // Main Interface
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
-            <div className="bg-green-600 text-white p-3 rounded-lg mr-4">
-              <Activity className="h-8 w-8" />
+            <div className="bg-blue-600 text-white p-3 rounded-lg mr-4">
+              <Truck className="h-8 w-8" />
             </div>
-            <h1 className="text-3xl font-bold">Pharmacy Management System</h1>
+            <h1 className="text-3xl font-bold">Device Manager</h1>
           </div>
           <Typography variant="small">{userAccount.slice(0, 6)}...{userAccount.slice(-4)}</Typography>
         </div>
 
         {error && <Alert color="red" className="mb-4">{error}</Alert>}
 
-        {/* Storage Management Section */}
         <Card className="p-6 rounded-xl shadow-sm mb-8">
-          <Typography variant="h5" className="mb-4">
-            Cold Chain Management
-          </Typography>
+  <Typography variant="h5" className="mb-4">
+    Assign Box to IoT Device
+  </Typography>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <Input
-              label="Refrigeration Unit ID"
-              value={storageUnitId}
-              onChange={(e) => setStorageUnitId(e.target.value)}
-            />
-            <Input
-              label="Vaccine Batch ID"
-              value={batchId}
-              onChange={(e) => setBatchId(e.target.value)}
-            />
-          </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <Input
+      label="IoT Device ID"
+      value={iotId}
+      onChange={(e) => setIotId(e.target.value)}
+    />
+    <Input
+      label="Box ID"
+      value={boxId}
+      onChange={(e) => setBoxId(e.target.value)}
+    />
+  </div>
 
-          <div className="mt-6">
-            <Button 
-              onClick={handleAssignment}
-              disabled={!storageUnitId || !batchId}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              Link Storage Unit
-            </Button>
-          </div>
+  {/* Add this button section */}
+  <div className="mt-6">
+    <Button 
+      onClick={handleAssignment}
+      disabled={!iotId || !boxId}
+      className="w-full bg-blue-600 hover:bg-blue-700"
+    >
+      Assign Device
+    </Button>
+  </div>
 
-          {txStatus.message && (
-            <Alert color={txStatus.success ? "green" : "red"} className="mt-4">
-              {txStatus.message}
-            </Alert>
-          )}
-        </Card>
-
-        {/* Sales Management Section */}
-        <Card className="p-6 rounded-xl shadow-sm mb-8">
-          <Typography variant="h5" className="mb-4">
-            Medication Sales
-          </Typography>
-
-          <div className="grid grid-cols-1 gap-4 mb-6">
-            <Input
-              label="Medication ID"
-              value={medId}
-              onChange={(e) => setMedId(e.target.value)}
-            />
-            
-            <Button 
-              onClick={handleMarkAsSold}
-              disabled={!medId}
-              className="w-full bg-red-600 hover:bg-red-700"
-            >
-              Mark as Sold
-            </Button>
-          </div>
-
-          {saleTxStatus.message && (
-            <Alert color={saleTxStatus.success ? "green" : "red"} className="mt-4">
-              {saleTxStatus.message}
-            </Alert>
-          )}
-        </Card>
+  {txStatus.message && (
+    <Alert color={txStatus.success ? "green" : "red"} className="mt-4">
+      {txStatus.message}
+    </Alert>
+  )}
+</Card>
       </div>
     </div>
   );
 }
 
-export default Pharmacy;
+export default Distributor;

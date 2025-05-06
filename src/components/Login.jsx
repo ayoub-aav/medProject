@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import networks from "../utils/networks";
 import { CheckCircle, XCircle, ChevronRight } from 'lucide-react';
-import Web3 from 'web3';
 import { initWeb3 } from '../utils/web3Connection_User';
 
 

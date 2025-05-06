@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Card, Typography, Alert, Input } from "@material-tailwind/react";
-import { Activity, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Activity, CheckCircle, AlertTriangle, XCircle, Box, Thermometer, DollarSign } from 'lucide-react'; // Added relevant icons
 import { useNavigate } from 'react-router-dom';
 import networks from "../utils/networks";
 import { initWeb3 as initializeWeb3 } from '../utils/web3Connection_User';
@@ -60,7 +60,7 @@ function Pharmacy() {
         // Initialize user contract
         const userWeb3 = await initializeWeb3();
         setUserContract(userWeb3.contractInstance);
-        
+
         // Initialize medecin contract
         const medecinWeb3 = await initializeMedecinWeb3();
         setMedecinContract(medecinWeb3.contractInstance);
@@ -151,45 +151,48 @@ function Pharmacy() {
   // Connection Requirements Check
   if (!isInstalled || !isNetwork || !userAccount || !isAuthorized) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-        <Card className="p-8 rounded-xl shadow-lg max-w-xl w-full text-center">
-          <div className="flex flex-col items-center mb-6">
-            <AlertTriangle className="h-16 w-16 text-orange-500 mb-4" />
-            <Typography variant="h4" className="mb-2">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-100 to-teal-100 p-4"> {/* Enhanced background */}
+        <Card className="p-8 rounded-2xl shadow-xl max-w-xl w-full text-center bg-white/90 backdrop-blur-sm"> {/* Softer corners, stronger shadow, slight transparency */}
+          <div className="flex flex-col items-center mb-8"> {/* Increased bottom margin */}
+            <AlertTriangle className="h-20 w-20 text-orange-600 mb-6 animate-pulse" /> {/* Larger icon, subtle animation */}
+            <Typography variant="h3" className="mb-3 font-semibold text-gray-800"> {/* Larger, bolder title */}
               Pharmacy System Requirements
+            </Typography>
+            <Typography variant="paragraph" className="text-gray-600">
+              Please ensure you meet the following requirements to access the pharmacy dashboard.
             </Typography>
           </div>
 
-          <div className="space-y-6 text-left mb-6">
+          <div className="space-y-6 text-left mb-8 border-t border-b border-gray-200 py-6"> {/* Added borders and padding */}
             <div className="flex items-center gap-4">
-              {isInstalled ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
-              <Typography>MetaMask Installed</Typography>
+              {isInstalled ? <CheckCircle className="text-green-600 h-6 w-6" /> : <XCircle className="text-red-600 h-6 w-6" />} {/* Larger icons */}
+              <Typography className="text-lg text-gray-700 font-medium">MetaMask Installed</Typography> {/* Larger, slightly bolder text */}
             </div>
 
             <div className="flex items-center gap-4">
-              {isNetwork ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
-              <Typography>Connected to Pharmaceutical Network</Typography>
+              {isNetwork ? <CheckCircle className="text-green-600 h-6 w-6" /> : <XCircle className="text-red-600 h-6 w-6" />}
+              <Typography className="text-lg text-gray-700 font-medium">Connected to Ganache Network</Typography>
               {!isNetwork && isInstalled && (
-                <Button size="sm" onClick={() => handleNetworkSwitch("ganache")}>
+                <Button size="md" onClick={() => handleNetworkSwitch("ganache")} className="bg-green-600 hover:bg-green-700 transition duration-300 ease-in-out"> {/* More prominent button */}
                   Switch Network
                 </Button>
               )}
             </div>
 
             <div className="flex items-center gap-4">
-              {userAccount ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
-              <Typography>Wallet Connected</Typography>
+              {userAccount ? <CheckCircle className="text-green-600 h-6 w-6" /> : <XCircle className="text-red-600 h-6 w-6" />}
+              <Typography className="text-lg text-gray-700 font-medium">Wallet Connected</Typography>
             </div>
 
             <div className="flex items-center gap-4">
-              {isAuthorized ? <CheckCircle className="text-green-500" /> : <XCircle className="text-red-500" />}
-              <Typography>Licensed Pharmacist</Typography>
+              {isAuthorized ? <CheckCircle className="text-green-600 h-6 w-6" /> : <XCircle className="text-red-600 h-6 w-6" />}
+              <Typography className="text-lg text-gray-700 font-medium">Authorized as {userRole}</Typography>
             </div>
           </div>
 
-          {error && <Alert color="red" className="mt-4">{error}</Alert>}
+          {error && <Alert color="red" className="mt-6 rounded-lg shadow-md">{error}</Alert>} {/* Styled alert */}
 
-          <Button variant="text" color="blue-gray" className="mt-6" onClick={() => navigate('/')}>
+          <Button variant="gradient" color="blue-gray" className="mt-8 w-full py-3 text-lg rounded-lg shadow-md" onClick={() => navigate('/')}> {/* Styled button */}
             Return to Login
           </Button>
         </Card>
@@ -198,80 +201,95 @@ function Pharmacy() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-green-100 to-teal-100 p-8"> {/* Enhanced background and padding */}
+      <div className="max-w-5xl mx-auto"> {/* Wider container */}
+        <div className="flex items-center justify-between mb-10 pb-4 border-b border-gray-200"> {/* Separator line */}
           <div className="flex items-center">
-            <div className="bg-green-600 text-white p-3 rounded-lg mr-4">
-              <Activity className="h-8 w-8" />
+            <div className="bg-green-600 text-white p-4 rounded-full mr-5 shadow-lg"> {/* Circular icon container, larger, shadow */}
+              <Activity className="h-10 w-10" /> {/* Larger icon */}
             </div>
-            <h1 className="text-3xl font-bold">Pharmacy Management System</h1>
+            <h1 className="text-4xl font-extrabold text-gray-800">Pharmacy Management System</h1> {/* Larger, bolder title */}
           </div>
-          <Typography variant="small">{userAccount.slice(0, 6)}...{userAccount.slice(-4)}</Typography>
+          <div className="flex items-center bg-white px-4 py-2 rounded-full shadow-sm"> {/* Styled account display */}
+            <Typography variant="small" className="mr-2 text-gray-700 font-medium">Connected:</Typography>
+            <Typography variant="small" className="font-mono text-green-700">{userAccount.slice(0, 6)}...{userAccount.slice(-4)}</Typography>
+          </div>
         </div>
 
-        {error && <Alert color="red" className="mb-4">{error}</Alert>}
+        {error && <Alert color="red" className="mb-6 rounded-lg shadow-md">{error}</Alert>} {/* Styled alert */}
 
         {/* Storage Management Section */}
-        <Card className="p-6 rounded-xl shadow-sm mb-8">
-          <Typography variant="h5" className="mb-4">
+        <Card className="p-8 rounded-2xl shadow-xl bg-white/90 backdrop-blur-sm mb-8"> {/* Styled card */}
+          <Typography variant="h4" className="mb-6 font-semibold text-gray-800 border-b pb-4 border-gray-200"> {/* Styled heading */}
             Cold Chain Management
           </Typography>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <Input
-              label="Refrigeration Unit ID"
-              value={storageUnitId}
-              onChange={(e) => setStorageUnitId(e.target.value)}
-            />
-            <Input
-              label="Vaccine Batch ID"
-              value={batchId}
-              onChange={(e) => setBatchId(e.target.value)}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"> {/* Increased gap */}
+            <div className="flex items-center gap-3"> {/* Added flex for icon alignment */}
+              <Thermometer className="text-blue-500 h-6 w-6" /> {/* Thermometer icon */}
+              <Input
+                label="Refrigeration Unit ID"
+                value={storageUnitId}
+                onChange={(e) => setStorageUnitId(e.target.value)}
+                size="lg" // Larger input
+              />
+            </div>
+            <div className="flex items-center gap-3"> {/* Added flex for icon alignment */}
+              <Box className="text-purple-500 h-6 w-6" /> {/* Box icon */}
+              <Input
+                label="Vaccine Batch ID"
+                value={batchId}
+                onChange={(e) => setBatchId(e.target.value)}
+                size="lg" // Larger input
+              />
+            </div>
           </div>
 
           <div className="mt-6">
-            <Button 
+            <Button
               onClick={handleAssignment}
               disabled={!storageUnitId || !batchId}
-              className="w-full bg-green-600 hover:bg-green-700"
+              className="w-full py-3 text-lg bg-green-600 hover:bg-green-700 transition duration-300 ease-in-out rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed" // Styled button, added disabled styles
             >
               Link Storage Unit
             </Button>
           </div>
 
           {txStatus.message && (
-            <Alert color={txStatus.success ? "green" : "red"} className="mt-4">
+            <Alert color={txStatus.success ? "green" : "red"} className="mt-6 rounded-lg shadow-md"> {/* Styled alert */}
               {txStatus.message}
             </Alert>
           )}
         </Card>
 
         {/* Sales Management Section */}
-        <Card className="p-6 rounded-xl shadow-sm mb-8">
-          <Typography variant="h5" className="mb-4">
+        <Card className="p-8 rounded-2xl shadow-xl bg-white/90 backdrop-blur-sm mb-8"> {/* Styled card */}
+          <Typography variant="h4" className="mb-6 font-semibold text-gray-800 border-b pb-4 border-gray-200"> {/* Styled heading */}
             Medication Sales
           </Typography>
 
-          <div className="grid grid-cols-1 gap-4 mb-6">
-            <Input
-              label="Medication ID"
-              value={medId}
-              onChange={(e) => setMedId(e.target.value)}
-            />
-            
-            <Button 
+          <div className="grid grid-cols-1 gap-6 mb-8"> {/* Increased gap */}
+            <div className="flex items-center gap-3"> {/* Added flex for icon alignment */}
+              <Box className="text-orange-500 h-6 w-6" /> {/* Box icon for med */}
+              <Input
+                label="Medication ID"
+                value={medId}
+                onChange={(e) => setMedId(e.target.value)}
+                size="lg" // Larger input
+              />
+            </div>
+
+            <Button
               onClick={handleMarkAsSold}
               disabled={!medId}
-              className="w-full bg-red-600 hover:bg-red-700"
+              className="w-full py-3 text-lg bg-red-600 hover:bg-red-700 transition duration-300 ease-in-out rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed" // Styled button, added disabled styles
             >
               Mark as Sold
             </Button>
           </div>
 
           {saleTxStatus.message && (
-            <Alert color={saleTxStatus.success ? "green" : "red"} className="mt-4">
+            <Alert color={saleTxStatus.success ? "green" : "red"} className="mt-6 rounded-lg shadow-md"> {/* Styled alert */}
               {saleTxStatus.message}
             </Alert>
           )}
@@ -281,4 +299,4 @@ function Pharmacy() {
   );
 }
 
-export default Pharmacy;
+export default Pharmacy;                                                                                                                                          

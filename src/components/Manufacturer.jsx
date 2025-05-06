@@ -1,19 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, Minus, Upload } from 'lucide-react';
+import { CheckCircle, ChevronDown, ChevronUp, Plus, Minus, Upload } from 'lucide-react';
 import { initWeb3 } from '../utils/web3Connection_medecin';
 import { processMedicamentCSVFile } from '../utils/processMedicamentCSV';
 import { uploadPDFToIPFS } from '../utils/PDF-IPFS';
+import { checkAMMValidity } from '../utils/checkAMMValidity';
+import { initWeb3 as userlogin} from '../utils/web3Connection_User';
+
 
 export default function Manufacturer() {
   const [web3Instance, setWeb3Instance] = useState();
   const [contractInstance, setContractInstance] = useState();
   const [accounts, setAccounts] = useState([]);
+  const [web3Instancee, setWeb3Instancee] = useState();
+  const [contractInstancee, setContractInstancee] = useState();
+  const [accountse, setAccountse] = useState([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [showRawMaterials, setShowRawMaterials] = useState(true);
   const [transactionStatus, setTransactionStatus] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [currentLotId, setCurrentLotId] = useState(null);
   const [ipfsUploadStatus, setIpfsUploadStatus] = useState({});
+  const [certErrors, setCertErrors] = useState({}); // { [index]: 'Error message' }
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [boxConditions, setBoxConditions] = useState({
     temperature: "",
     humidite: "",
@@ -72,6 +81,24 @@ export default function Manufacturer() {
     loadWeb3();
   }, []);
 
+
+  useEffect(() => {
+    const loadWeb3 = async () => {
+      try {
+        const { web3Instance, contractInstance, accounts } = await userlogin();
+        setWeb3Instancee(web3Instance);
+        setContractInstancee(contractInstance);
+        setAccountse(accounts);
+      } catch (error) {
+        // Keep error handling but remove console.error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadWeb3();
+  }, []);
+
   const handleLotDetailsChange = (e) => {
     const { name, value } = e.target;
     setLotDetails(prev => ({ ...prev, [name]: value }));
@@ -117,6 +144,69 @@ export default function Manufacturer() {
   const handleFileChange = (e) => {
     setSelectedFile(e.target.files[0]);
   };
+
+
+
+  const verifyManufacturer = async (contract, address) => {
+    try {
+      const exists = await contract.methods.doesUserExist(address).call();
+      if (!exists) {
+        setIsAuthorized(false);
+        return;
+      }
+      
+      const userData = await contract.methods.getUser(address).call();
+      setIsAuthorized(userData.role.toLowerCase() === "manufacturer");
+    } catch (err) {
+      console.error("Manufacturer verification failed:", err);
+      setIsAuthorized(false);
+    }
+  };
+  
+  // Modify the loadWeb3 useEffect to include verification
+  useEffect(() => {
+    const loadWeb3 = async () => {
+      try {
+        const { web3Instance, contractInstance, accounts } = await initWeb3();
+        setWeb3Instance(web3Instance);
+        setContractInstance(contractInstance);
+        setAccounts(accounts);
+        verifyManufacturer(contractInstance, accounts[0]);
+      } catch (error) {
+        setIsAuthorized(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    loadWeb3();
+  }, []);
+  
+  // Add account change listener
+  useEffect(() => {
+    if (contractInstancee) {
+      if (accounts.length > 0) {
+        verifyManufacturer(contractInstancee, accounts[0]);
+      } else {
+        setIsAuthorized(false); // No accounts connected
+      }
+    }
+  }, [contractInstancee, accounts]);
+
+  useEffect(() => {
+    if (!window.ethereum) return;
+  
+    const handleAccountsChanged = (accs) => {
+      setAccounts(accs);
+    };
+  
+    window.ethereum.on('accountsChanged', handleAccountsChanged);
+  
+    // Cleanup listener on unmount
+    return () => {
+      window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+    };
+  }, []);
 
   const creerLotMedicament = async () => {
     if (!contractInstance || !accounts.length) {
@@ -283,6 +373,22 @@ export default function Manufacturer() {
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading Web3...</div>;
+  }
+  
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-blue-100 to-orange-200 p-4">
+        <div className="bg-white p-8 rounded-xl shadow-lg text-center">
+          <CheckCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
+          <p className="text-xl font-semibold text-gray-800 mb-2">
+            Manufacturer Access Required
+          </p>
+          <p className="text-gray-600">
+            Connect MetaMask with a manufacturer account to use this page.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -579,54 +685,89 @@ export default function Manufacturer() {
                               </div>
                               
                               <div>
-  <label className="block text-gray-700 text-xs font-medium mb-1">Analysis Cert.</label>
-  <div className="relative flex items-center">
-    <input
-      type="file"
-      accept=".pdf"
-      id={`certificatAnalyse-${index}`}
-      name="certificatAnalyse"
-      onChange={async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        try {
-          const cid = await uploadPDFToIPFS(file);
-          console.log(cid);
-          handleRawMaterialChange(index, {
-            target: {
-              name: 'certificatAnalyse',
-              value: cid
-            }
-          });
-        } catch (error) {
-          console.error("Upload failed:", error);
-        }
-      }}
-      className="block w-full text-xs text-gray-700 px-2 py-1 border border-gray-300 rounded-md
-      file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs
-      file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
-    />
-    {/* Always show the X button when a file is selected */}
-    {document.getElementById(`certificatAnalyse-${index}`)?.files?.length > 0 && (
-      <button
-        type="button"
-        onClick={() => {
-          document.getElementById(`certificatAnalyse-${index}`).value = '';
-          handleRawMaterialChange(index, {
-            target: { name: 'certificatAnalyse', value: '' }
-          });
-        }}
-        className="absolute right-2 text-gray-500 hover:text-red-500"
-        aria-label="Remove file"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    )}
-  </div>
-</div>
+                                <label className="block text-gray-700 text-xs font-medium mb-1">
+                                  Analysis Cert.
+                                </label>
+                                <div className="relative flex items-center">
+                                  <input
+                                    type="file"
+                                    accept=".pdf"
+                                    id={`certificatAnalyse-${index}`}
+                                    name="certificatAnalyse"
+                                    onChange={async (e) => {
+                                      const file = e.target.files[0];
+                                      // clear old error
+                                      setCertErrors(prev => ({ ...prev, [index]: '' }));
+                                      if (!file) return;
+
+                                      // 1️⃣ validate
+                                      const valid = await checkAMMValidity(file);
+                                      if (!valid) {
+                                        setCertErrors(prev => ({
+                                          ...prev,
+                                          [index]: 'Invalid document. Please select a valid PDF.'
+                                        }));
+                                        e.target.value = '';
+                                        handleRawMaterialChange(index, {
+                                          target: { name: 'certificatAnalyse', value: '' }
+                                        });
+                                        return;
+                                      }
+
+                                      // 2️⃣ upload
+                                      try {
+                                        const cid = await uploadPDFToIPFS(file);
+                                        console.log(cid);
+                                        handleRawMaterialChange(index, {
+                                          target: { name: 'certificatAnalyse', value: cid }
+                                        });
+                                      } catch (error) {
+                                        console.error('Upload failed:', error);
+                                        // you can set another error here if you want
+                                      }
+                                    }}
+                                    className="block w-full text-xs text-gray-700 px-2 py-1 border border-gray-300 rounded-md
+                                              file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs
+                                              file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                                  />
+
+                                  {/* X button always visible when a file is selected */}
+                                  {document.getElementById(`certificatAnalyse-${index}`)?.files?.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        document.getElementById(`certificatAnalyse-${index}`).value = '';
+                                        handleRawMaterialChange(index, {
+                                          target: { name: 'certificatAnalyse', value: '' }
+                                        });
+                                      }}
+                                      className="absolute right-2 text-gray-500 hover:text-red-500"
+                                      aria-label="Remove file"
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M6 18L18 6M6 6l12 12"
+                                        />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* validation error */}
+                                {certErrors[index] && (
+                                  <p className="mt-1 text-red-500 text-xs">{certErrors[index]}</p>
+                                )}
+                              </div>
+
                               
                               <div>
                                 <label className="block text-gray-700 text-xs font-medium mb-1">Reception Date</label>

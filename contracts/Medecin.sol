@@ -190,39 +190,40 @@ contract Medecin {
 
 
     function recordEnvironmentalData(
-    string memory _iotId,
-    EnvironmentalData memory data
-) public returns (bool) {
-    bool dataRecorded = false;
-    bool hasBox = false;
-    for (uint i = 0; i < allBoxIds.length; i++) {
-        if (keccak256(abi.encodePacked(boxToIot[allBoxIds[i]])) 
-            == keccak256(abi.encodePacked(_iotId))) {
-            hasBox = true;
-            string[] memory meds = boxToMedicaments[allBoxIds[i]];
-            for (uint j = 0; j < meds.length; j++) {
-                if (medicamentExists(meds[j])) {
-                    EnvironmentalData memory newData = EnvironmentalData({
-                        tempMax: data.tempMax,
-                        tempMin: data.tempMin,
-                        tempAvg: data.tempAvg,
-                        humidMax: data.humidMax,
-                        humidMin: data.humidMin,
-                        humidAvg: data.humidAvg,
-                        x: data.x,
-                        y: data.y,
-                        timestamp: block.timestamp
-                    });
-                    medicaments[meds[j]].environmentalHistory.push(newData);
-                    emit EnvironmentalDataRecorded(_iotId, meds[j], block.timestamp);
-                    dataRecorded = true;
+        string memory _iotId,
+        EnvironmentalData memory data
+    ) public returns (bool) {
+        bool dataRecorded = false;
+        bool hasBox = false;
+        for (uint i = 0; i < allBoxIds.length; i++) {
+            if (keccak256(abi.encodePacked(boxToIot[allBoxIds[i]])) 
+                == keccak256(abi.encodePacked(_iotId))) {
+                hasBox = true;
+                string[] memory meds = boxToMedicaments[allBoxIds[i]];
+                for (uint j = 0; j < meds.length; j++) {
+                    // Check if medicament exists and is not sold
+                    if (medicamentExists(meds[j]) && !medicaments[meds[j]].sold) {
+                        EnvironmentalData memory newData = EnvironmentalData({
+                            tempMax: data.tempMax,
+                            tempMin: data.tempMin,
+                            tempAvg: data.tempAvg,
+                            humidMax: data.humidMax,
+                            humidMin: data.humidMin,
+                            humidAvg: data.humidAvg,
+                            x: data.x,
+                            y: data.y,
+                            timestamp: block.timestamp
+                        });
+                        medicaments[meds[j]].environmentalHistory.push(newData);
+                        emit EnvironmentalDataRecorded(_iotId, meds[j], block.timestamp);
+                        dataRecorded = true;
+                    }
                 }
             }
         }
+        if (!hasBox) return false;
+        return dataRecorded;
     }
-    if (!hasBox) return false;
-    return dataRecorded;
-}
 
 
     // ask the contract “Which boxes does this IoT device currently manage”
@@ -251,6 +252,8 @@ contract Medecin {
         require(medicamentExists(_medicamentId), "Medicament non trouve");
         return medicaments[_medicamentId].environmentalHistory;
     }
+
+    
 
     function getProductInfo(string memory _medicamentId) public view returns (ProductInfo memory) {
         UniteMedicament memory unit = medicaments[_medicamentId];

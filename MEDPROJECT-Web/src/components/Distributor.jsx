@@ -1,0 +1,148 @@
+import React, { useState, useEffect } from 'react';
+import { Button, Card, Typography, Alert, Input } from "@material-tailwind/react";
+import { Truck } from 'lucide-react';
+import networks from "../utils/networks";
+import { initWeb3 as initializeWeb3 } from '../utils/web3Connection_User';
+import { initWeb3 as initializeMedecinWeb3 } from '../utils/web3Connection_medecin';
+
+function Distributor() {
+  const [web3Instance, setWeb3Instance] = useState(null);
+  const [userContract, setUserContract] = useState(null);
+  const [medecinContract, setMedecinContract] = useState(null);
+  const [accounts, setAccounts] = useState([]);
+  const [userAccount, setUserAccount] = useState("");
+  const [error, setError] = useState("");
+  const [iotId, setIotId] = useState('');
+  const [boxId, setBoxId] = useState('');
+  const [txStatus, setTxStatus] = useState({ success: null, message: '' });
+
+  // Web3 Initialization for both contracts
+  useEffect(() => {
+    const loadWeb3 = async () => {
+      try {
+        // Initialize user contract
+        const userWeb3 = await initializeWeb3();
+        setUserContract(userWeb3.contractInstance);
+        
+        // Initialize medecin contract
+        const medecinWeb3 = await initializeMedecinWeb3();
+        setMedecinContract(medecinWeb3.contractInstance);
+        setWeb3Instance(medecinWeb3.web3Instance);
+        setAccounts(medecinWeb3.accounts);
+      } catch (error) {
+        setError("Failed to initialize Web3");
+      }
+    };
+    loadWeb3();
+  }, []);
+
+  // Account Management
+  useEffect(() => {
+    const checkAccount = async () => {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: "eth_accounts" });
+          if (accounts.length > 0) setUserAccount(accounts[0]);
+        } catch (error) {
+          console.error("Account check failed:", error);
+        }
+      }
+    };
+    checkAccount();
+  }, []);
+
+  // Authorization Check using user contract
+  useEffect(() => {
+    const checkAuthorization = async () => {
+      if (userContract && userAccount) {
+        try {
+          const isUser = await userContract.methods.getAllUserAddresses().call()
+            .then(addresses => addresses.some(addr => addr.toLowerCase() === userAccount.toLowerCase()));
+
+          if (isUser) {
+            const userData = await userContract.methods.getUser(userAccount).call();
+            if (userData.role !== "Distributor") {
+              setError("Unauthorized: Not a Distributor");
+            }
+          } else {
+            setError("Unauthorized: User not found");
+          }
+        } catch (error) {
+          console.error("Authorization check failed:", error);
+          setError("Authorization check failed");
+        }
+      }
+    };
+    checkAuthorization();
+  }, [userContract, userAccount]);
+
+  // Assignment Handler using medecin contract
+  const handleAssignment = async () => {
+    setTxStatus({ success: null, message: '' });
+    try {
+      await medecinContract.methods.assignBoxToIoT(iotId, boxId)
+        .send({ from: userAccount });
+      setTxStatus({ success: true, message: 'Assignment successful!' });
+      setIotId('');
+      setBoxId('');
+    } catch (error) {
+      setTxStatus({ success: false, message: `Error: ${error.message} `});
+    }
+  };
+
+  // Main Interface
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <div className="bg-blue-600 text-white p-3 rounded-lg mr-4">
+              <Truck className="h-8 w-8" />
+            </div>
+            <h1 className="text-3xl font-bold">Device Manager</h1>
+          </div>
+          <Typography variant="small">{userAccount ? `${userAccount.slice(0, 6)}...${userAccount.slice(-4)}` : 'No account connected'}</Typography>
+        </div>
+
+        {error && <Alert color="red" className="mb-4">{error}</Alert>}
+
+        <Card className="p-6 rounded-xl shadow-sm mb-8">
+          <Typography variant="h5" className="mb-4">
+            Assign Box to IoT Device
+          </Typography>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <Input
+              label="IoT Device ID"
+              value={iotId}
+              onChange={(e) => setIotId(e.target.value)}
+            />
+            <Input
+              label="Box ID"
+              value={boxId}
+              onChange={(e) => setBoxId(e.target.value)}
+            />
+          </div>
+
+          <div className="mt-6">
+            <Button 
+              onClick={handleAssignment}
+              disabled={!iotId || !boxId}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              Assign Device
+            </Button>
+          </div>
+
+          {txStatus.message && (
+            <Alert color={txStatus.success ? "green" : "red"} className="mt-4">
+              {txStatus.message}
+            </Alert>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+export default Distributor;

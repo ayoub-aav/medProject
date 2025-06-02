@@ -1,0 +1,1044 @@
+{
+  "address": "0xFF30C7107eA228f97D909019AE5B920E2e50e5c0",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "boxId",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "lotId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "medicamentCount",
+          "type": "uint256"
+        }
+      ],
+      "name": "BoxAssembled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "iotId",
+          "type": "string"
+        },
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "boxId",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "BoxAssignedToIoT",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "iotId",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "medicamentId",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "EnvironmentalDataRecorded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "lotId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "nomMedicament",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "LotCree",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "medicamentId",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "lotId",
+          "type": "uint256"
+        }
+      ],
+      "name": "MedicamentCreated",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "allBoxIds",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "name": "boxToIot",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "boxToMedicaments",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "lots",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "lotId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "nomMedicament",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "substanceActive",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "forme",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "dateFabrication",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "datePeremption",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "nomFabricant",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "paysOrigine",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "amm",
+          "type": "string"
+        },
+        {
+          "components": [
+            {
+              "internalType": "int8",
+              "name": "temperatureMax",
+              "type": "int8"
+            },
+            {
+              "internalType": "int8",
+              "name": "temperatureMin",
+              "type": "int8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humiditeMax",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humiditeMin",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct Medecin.Conservation",
+          "name": "conditionsConservation",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "name": "medicaments",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "medicamentId",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "lotId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "sold",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timestampCreation",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [],
+      "name": "nextLotId",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "nomMedicament",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "substanceActive",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "forme",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "dateFabrication",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "datePeremption",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "nomFabricant",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "paysOrigine",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "amm",
+              "type": "string"
+            }
+          ],
+          "internalType": "struct Medecin.LotDetails",
+          "name": "_lotDetails",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "int8",
+              "name": "temperatureMax",
+              "type": "int8"
+            },
+            {
+              "internalType": "int8",
+              "name": "temperatureMin",
+              "type": "int8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humiditeMax",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humiditeMin",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct Medecin.Conservation",
+          "name": "_conservation",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "nom",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "origine",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "fournisseur",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "degrePurete",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "quantiteParUnite",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "certificatAnalyse",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "dateReception",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "transport",
+              "type": "string"
+            }
+          ],
+          "internalType": "struct Medecin.MatierePremiere[]",
+          "name": "_matieresPremieresLot",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "creerLotMedicament",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string[]",
+          "name": "_medicamentIds",
+          "type": "string[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_lotId",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "int8",
+              "name": "tempMax",
+              "type": "int8"
+            },
+            {
+              "internalType": "int8",
+              "name": "tempMin",
+              "type": "int8"
+            },
+            {
+              "internalType": "int8",
+              "name": "tempAvg",
+              "type": "int8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humidMax",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humidMin",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humidAvg",
+              "type": "uint8"
+            },
+            {
+              "internalType": "string",
+              "name": "x",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "y",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct Medecin.EnvironmentalData",
+          "name": "_envData",
+          "type": "tuple"
+        }
+      ],
+      "name": "createMedicamentUnits",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "boxId",
+              "type": "string"
+            },
+            {
+              "internalType": "string[]",
+              "name": "medicamentIds",
+              "type": "string[]"
+            }
+          ],
+          "internalType": "struct Medecin.Box[]",
+          "name": "_boxes",
+          "type": "tuple[]"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_lotId",
+          "type": "uint256"
+        },
+        {
+          "components": [
+            {
+              "internalType": "int8",
+              "name": "tempMax",
+              "type": "int8"
+            },
+            {
+              "internalType": "int8",
+              "name": "tempMin",
+              "type": "int8"
+            },
+            {
+              "internalType": "int8",
+              "name": "tempAvg",
+              "type": "int8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humidMax",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humidMin",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humidAvg",
+              "type": "uint8"
+            },
+            {
+              "internalType": "string",
+              "name": "x",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "y",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct Medecin.EnvironmentalData",
+          "name": "_envData",
+          "type": "tuple"
+        }
+      ],
+      "name": "createAndAssignMedicaments",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_iotId",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_boxId",
+          "type": "string"
+        }
+      ],
+      "name": "assignBoxToIoT",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_iotId",
+          "type": "string"
+        },
+        {
+          "components": [
+            {
+              "internalType": "int8",
+              "name": "tempMax",
+              "type": "int8"
+            },
+            {
+              "internalType": "int8",
+              "name": "tempMin",
+              "type": "int8"
+            },
+            {
+              "internalType": "int8",
+              "name": "tempAvg",
+              "type": "int8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humidMax",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humidMin",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humidAvg",
+              "type": "uint8"
+            },
+            {
+              "internalType": "string",
+              "name": "x",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "y",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct Medecin.EnvironmentalData",
+          "name": "data",
+          "type": "tuple"
+        }
+      ],
+      "name": "recordEnvironmentalData",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_iotId",
+          "type": "string"
+        }
+      ],
+      "name": "getBoxesForIoT",
+      "outputs": [
+        {
+          "internalType": "string[]",
+          "name": "",
+          "type": "string[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_medicamentId",
+          "type": "string"
+        }
+      ],
+      "name": "getEnvironmentalHistory",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "int8",
+              "name": "tempMax",
+              "type": "int8"
+            },
+            {
+              "internalType": "int8",
+              "name": "tempMin",
+              "type": "int8"
+            },
+            {
+              "internalType": "int8",
+              "name": "tempAvg",
+              "type": "int8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humidMax",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humidMin",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "humidAvg",
+              "type": "uint8"
+            },
+            {
+              "internalType": "string",
+              "name": "x",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "y",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct Medecin.EnvironmentalData[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_medicamentId",
+          "type": "string"
+        }
+      ],
+      "name": "getProductInfo",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "manufacturer",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "manufactureDate",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "expiryDate",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "batchNumber",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "substanceActive",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "forme",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "paysOrigine",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "amm",
+              "type": "string"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "int8",
+                  "name": "temperatureMax",
+                  "type": "int8"
+                },
+                {
+                  "internalType": "int8",
+                  "name": "temperatureMin",
+                  "type": "int8"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "humiditeMax",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "humiditeMin",
+                  "type": "uint8"
+                }
+              ],
+              "internalType": "struct Medecin.Conservation",
+              "name": "conditionsConservation",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "int8",
+                  "name": "tempMax",
+                  "type": "int8"
+                },
+                {
+                  "internalType": "int8",
+                  "name": "tempMin",
+                  "type": "int8"
+                },
+                {
+                  "internalType": "int8",
+                  "name": "tempAvg",
+                  "type": "int8"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "humidMax",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "humidMin",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "uint8",
+                  "name": "humidAvg",
+                  "type": "uint8"
+                },
+                {
+                  "internalType": "string",
+                  "name": "x",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "y",
+                  "type": "string"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "timestamp",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct Medecin.EnvironmentalData",
+              "name": "latestConditions",
+              "type": "tuple"
+            },
+            {
+              "internalType": "bool",
+              "name": "sold",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct Medecin.ProductInfo",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_medicamentId",
+          "type": "string"
+        }
+      ],
+      "name": "getRawMaterials",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "nom",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "origine",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "fournisseur",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "degrePurete",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "quantiteParUnite",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "certificatAnalyse",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "dateReception",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "transport",
+              "type": "string"
+            }
+          ],
+          "internalType": "struct Medecin.MatierePremiere[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_medicamentId",
+          "type": "string"
+        }
+      ],
+      "name": "medicamentExists",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_medicamentId",
+          "type": "string"
+        }
+      ],
+      "name": "markMedicamentAsSold",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ]
+}

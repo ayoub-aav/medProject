@@ -516,7 +516,7 @@ module.exports = {
     Pinata: require('./pinataInstance'),
     fs: require('fs'),
     path: require('path'),
-    medecinJsonPath: 'C:\\Users\\HP\\Documents\\GitHub\\medproject\\src\\build\\Medecin.json'
+    medecinJsonPath: 'C:\\Users\\HP\\Documents\\GitHub\\medproject\\MEDPROJECT-Web\\src\\build\\Medecin.json'
 },
 
     

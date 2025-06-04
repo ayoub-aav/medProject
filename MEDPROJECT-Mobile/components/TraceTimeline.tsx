@@ -65,6 +65,7 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
                 if (tracePoints.length > 0) {
                     const data = await getEnvironmentalData(tracePoints[0].id);
                     setEnvData(data || []);
+                    console.log(envData);
                 }
             } catch (e: any) {
                 console.error('Error loading environmental data:', e);
@@ -92,14 +93,23 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
         );
     }
 
-    // Split out manufacturer, distributors, and pharmacy
+    // Split out manufacturer, distributors, and pharmacy based on location changes
     const manufacturer = tracePoints[0];
-    const distributors = tracePoints.slice(1, -1);
-    const pharmacy = tracePoints[tracePoints.length - 1];
+    let pharmacyStartIndex = tracePoints.length - 1;
+    
+    // Find the start of the pharmacy section by checking location changes
+    for (let i = tracePoints.length - 1; i > 0; i--) {
+        if (tracePoints[i].location !== tracePoints[i - 1].location) {
+            pharmacyStartIndex = i;
+            break;
+        }
+    }
+    
+    const pharmacy = tracePoints[pharmacyStartIndex];
+    const distributors = tracePoints.slice(1, pharmacyStartIndex);
 
     const formatDate = (ts: string | number) => {
-        const d =
-            typeof ts === 'number' ? new Date(ts * 1000) : new Date(ts);
+        const d = typeof ts === 'number' ? new Date(ts * 1000) : new Date(ts);
         return d.toLocaleDateString('fr-FR', {
             year: 'numeric',
             month: 'short',
@@ -115,7 +125,8 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
         Icon: React.FC<any>,
         actor: string,
         location: string,
-        timestamp: string
+        timestamp: string,
+        showMinMax: boolean = true
     ) => (
         <View style={[styles.card, styles.manufacturerCard]}>
             <View style={styles.cardHeader}>
@@ -123,46 +134,51 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
                 <Text style={styles.cardTitle}>{title}</Text>
             </View>
             <View style={styles.cardContent}>
-                <Text style={styles.infoLabel}>Actor: {actor}</Text>
-                <Text style={styles.infoLabel}>Location: {location}</Text>
-                <Text style={styles.infoLabel}>Date: {formatDate(timestamp)}</Text>
                 <View style={styles.section}>
-                    <View style={styles.environmentRow}>
-                        <Thermometer size={16} />
-                        <Text style={styles.environmentText}>
-                            Max Temp: {data.tempMax}°C
-                        </Text>
-                    </View>
-                    <View style={styles.environmentRow}>
-                        <Thermometer size={16} />
-                        <Text style={styles.environmentText}>
-                            Min Temp: {data.tempMin}°C
-                        </Text>
-                    </View>
                     <View style={styles.environmentRow}>
                         <Thermometer size={16} />
                         <Text style={styles.environmentText}>
                             Avg Temp: {data.tempAvg}°C
                         </Text>
                     </View>
-                    <View style={styles.environmentRow}>
-                        <Droplet size={16} />
-                        <Text style={styles.environmentText}>
-                            Max Humidity: {data.humidMax}%
-                        </Text>
-                    </View>
-                    <View style={styles.environmentRow}>
-                        <Droplet size={16} />
-                        <Text style={styles.environmentText}>
-                            Min Humidity: {data.humidMin}%
-                        </Text>
-                    </View>
+                    {showMinMax && (
+                        <>
+                            <View style={styles.environmentRow}>
+                                <Thermometer size={16} />
+                                <Text style={styles.environmentText}>
+                                    Max Temp: {data.tempMax}°C
+                                </Text>
+                            </View>
+                            <View style={styles.environmentRow}>
+                                <Thermometer size={16} />
+                                <Text style={styles.environmentText}>
+                                    Min Temp: {data.tempMin}°C
+                                </Text>
+                            </View>
+                        </>
+                    )}
                     <View style={styles.environmentRow}>
                         <Droplet size={16} />
                         <Text style={styles.environmentText}>
                             Avg Humidity: {data.humidAvg}%
                         </Text>
                     </View>
+                    {showMinMax && (
+                        <>
+                            <View style={styles.environmentRow}>
+                                <Droplet size={16} />
+                                <Text style={styles.environmentText}>
+                                    Max Humidity: {data.humidMax}%
+                                </Text>
+                            </View>
+                            <View style={styles.environmentRow}>
+                                <Droplet size={16} />
+                                <Text style={styles.environmentText}>
+                                    Min Humidity: {data.humidMin}%
+                                </Text>
+                            </View>
+                        </>
+                    )}
                     <View style={styles.environmentRow}>
                         <MapPin size={16} />
                         <Text style={styles.environmentText}>
@@ -186,42 +202,44 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
             contentContainerStyle={styles.contentContainer}
         >
             {/* Manufacturer */}
-            {envData.length > 0 && envData.map((data, index) => 
+            {envData[0] &&
                 renderEnvironmentalCard(
-                    data,
-                    `Manufacturing Record ${index + 1}`,
+                    envData[0],
+                    'Manufacturing',
                     Package,
                     manufacturer.actor,
                     manufacturer.location,
-                    manufacturer.timestamp
-                )
-            )}
+                    manufacturer.timestamp,
+                    false // Don't show min/max for manufacturer
+                )}
 
             {/* Distributors */}
             {distributors.map((pt, idx) =>
-                envData.length > idx + 1 && envData.map((data, index) => 
-                    renderEnvironmentalCard(
-                        data,
-                        `Distribution Checkpoint ${idx + 1} Record ${index + 1}`,
+                envData[idx + 1]
+                    ? renderEnvironmentalCard(
+                        envData[idx + 1],
+                        `Distribution Checkpoint ${idx + 1}`,
                         Truck,
                         pt.actor,
                         pt.location,
-                        pt.timestamp
+                        pt.timestamp,
+                        true // Show min/max for distributors
                     )
-                )
+                    : null
             )}
 
             {/* Pharmacy */}
-            {pharmacy && envData.length > 0 && envData.map((data, index) =>
+            {pharmacy &&
+                envData[envData.length - 1] &&
                 renderEnvironmentalCard(
-                    data,
-                    `Pharmacy Record ${index + 1}`,
+                    envData[envData.length - 1],
+                    'Pharmacy',
                     Building2,
                     pharmacy.actor,
                     pharmacy.location,
-                    pharmacy.timestamp
-                )
-            )}
+                    pharmacy.timestamp,
+                    true // Show min/max for pharmacy
+                )}
         </ScrollView>
     );
 };

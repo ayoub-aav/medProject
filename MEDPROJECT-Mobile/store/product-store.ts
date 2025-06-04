@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { ethers } from 'ethers';
-import { abi, address } from '../blockchain/Medecin.json';
+import { abi} from '../blockchain/Medecin.json';
+import Medecin from '../blockchain/Medecin.json'
+const address = Medecin.networks[5777].address;
+
 
 interface ProductState {
     searchQuery: string;

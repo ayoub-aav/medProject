@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import Medecin from "../blockchain/Medecin.json";
 
 const provider = new ethers.JsonRpcProvider("http://127.0.0.1:7545");
-const contract = new ethers.Contract(Medecin.address, Medecin.abi, provider);
+const contract = new ethers.Contract(Medecin.networks[5777].address, Medecin.abi, provider);
 
 export interface EnvironmentalData {
     tempMax: number;

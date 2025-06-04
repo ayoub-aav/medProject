@@ -186,41 +186,42 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
             contentContainerStyle={styles.contentContainer}
         >
             {/* Manufacturer */}
-            {envData[0] &&
+            {envData.length > 0 && envData.map((data, index) => 
                 renderEnvironmentalCard(
-                    envData[0],
-                    'Manufacturing',
+                    data,
+                    `Manufacturing Record ${index + 1}`,
                     Package,
                     manufacturer.actor,
                     manufacturer.location,
                     manufacturer.timestamp
-                )}
+                )
+            )}
 
             {/* Distributors */}
             {distributors.map((pt, idx) =>
-                envData[idx + 1]
-                    ? renderEnvironmentalCard(
-                        envData[idx + 1],
-                        `Distribution Checkpoint ${idx + 1}`,
+                envData.length > idx + 1 && envData.map((data, index) => 
+                    renderEnvironmentalCard(
+                        data,
+                        `Distribution Checkpoint ${idx + 1} Record ${index + 1}`,
                         Truck,
                         pt.actor,
                         pt.location,
                         pt.timestamp
                     )
-                    : null
+                )
             )}
 
             {/* Pharmacy */}
-            {pharmacy &&
-                envData[tracePoints.length - 1] &&
+            {pharmacy && envData.length > 0 && envData.map((data, index) =>
                 renderEnvironmentalCard(
-                    envData[tracePoints.length - 1],
-                    'Pharmacy',
+                    data,
+                    `Pharmacy Record ${index + 1}`,
                     Building2,
                     pharmacy.actor,
                     pharmacy.location,
                     pharmacy.timestamp
-                )}
+                )
+            )}
         </ScrollView>
     );
 };

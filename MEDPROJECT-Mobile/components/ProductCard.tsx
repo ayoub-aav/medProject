@@ -85,34 +85,45 @@ export default function ProductCard({ product }: { product: ProductInfo }) {
 
             {/* Environmental Data Section */}
             <View style={styles.sectionDivider} />
-            <Text style={styles.sectionTitle}>Initial Environmental Data</Text>
+            <Text style={styles.sectionTitle}>Environmental Data History</Text>
 
             {loading ? (
                 <View style={styles.row}>
                     <Text style={styles.text}>Loading environmental data...</Text>
                 </View>
-            ) : firstEnvRecord ? (
+            ) : envData.length > 0 ? (
                 <>
-                    <View style={styles.row}>
-                        <Thermometer size={16} color={Colors.textSecondary} />
-                        <Text style={styles.text}>
-                            Temperature: {firstEnvRecord.tempAvg}°C
-                        </Text>
-                    </View>
+                    {envData.map((record, index) => (
+                        <View key={index} style={styles.environmentalRecordContainer}>
+                            <Text style={styles.environmentalRecordTitle}>Record {index + 1}</Text>
+                            <View style={styles.row}>
+                                <Thermometer size={16} color={Colors.textSecondary} />
+                                <Text style={styles.text}>
+                                    Temperature: {record.tempAvg}°C (Min: {record.tempMin}°C, Max: {record.tempMax}°C)
+                                </Text>
+                            </View>
 
-                    <View style={styles.row}>
-                        <Droplet size={16} color={Colors.textSecondary} />
-                        <Text style={styles.text}>
-                            Humidity: {firstEnvRecord.humidAvg}%
-                        </Text>
-                    </View>
+                            <View style={styles.row}>
+                                <Droplet size={16} color={Colors.textSecondary} />
+                                <Text style={styles.text}>
+                                    Humidity: {record.humidAvg}% (Min: {record.humidMin}%, Max: {record.humidMax}%)
+                                </Text>
+                            </View>
 
-                    <View style={styles.row}>
-                        <MapPin size={16} color={Colors.textSecondary} />
-                        <Text style={styles.text}>
-                            Origin: {product.paysOrigine}
-                        </Text>
-                    </View>
+                            <View style={styles.row}>
+                                <MapPin size={16} color={Colors.textSecondary} />
+                                <Text style={styles.text}>
+                                    Coords: ({record.x}, {record.y})
+                                </Text>
+                            </View>
+                             <View style={styles.row}>
+                                <Calendar size={16} color={Colors.textSecondary} />
+                                <Text style={styles.text}>
+                                     Timestamp: {new Date(record.timestamp * 1000).toLocaleString()}
+                                </Text>
+                            </View>
+                        </View>
+                    ))}
                 </>
             ) : (
                 <View style={styles.row}>
@@ -169,5 +180,17 @@ const styles = StyleSheet.create({
         color: Colors.textSecondary,
         fontSize: 14,
         fontStyle: 'italic',
+    },
+    environmentalRecordContainer: {
+        marginTop: 8,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: Colors.border,
+    },
+    environmentalRecordTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginBottom: 4,
+        color: Colors.text,
     },
 });

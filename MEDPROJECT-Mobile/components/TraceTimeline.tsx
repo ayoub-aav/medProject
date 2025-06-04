@@ -7,6 +7,8 @@ import {
     View,
     ScrollView,
     ActivityIndicator,
+    TouchableOpacity,
+    Animated,
 } from 'react-native';
 import {
     Package,
@@ -16,6 +18,8 @@ import {
     Droplet,
     MapPin,
     Calendar,
+    ChevronDown,
+    ChevronUp,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { getEnvironmentalData } from '@/utils/contract';
@@ -32,7 +36,6 @@ export interface EnvironmentalData {
     timestamp: number;
 }
 
-
 export interface TracePoint {
     id: string;
     action: string;
@@ -42,22 +45,45 @@ export interface TracePoint {
     timestamp: string;
 }
 
-interface RawMaterial {
-    nom: string;
-    origine: string;
-    fournisseur: string;
-    degrePurete: string;
-}
-
-
 interface TraceTimelineProps {
     tracePoints: TracePoint[];
+}
+
+interface LocationInfo {
+    city: string;
+    street: string;
+    country: string;
 }
 
 const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
     const [envData, setEnvData] = useState<EnvironmentalData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+    const [locations, setLocations] = useState<Map<string, LocationInfo>>(new Map());
+
+    // Reverse geocoding function
+    const reverseGeocode = async (lat: string, lng: string): Promise<LocationInfo> => {
+        try {
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`
+            );
+            const data = await response.json();
+            
+            return {
+                city: data.address?.city || data.address?.town || data.address?.village || 'Unknown City',
+                street: data.address?.road || data.address?.street || 'Unknown Street',
+                country: data.address?.country || 'Unknown Country'
+            };
+        } catch (error) {
+            console.error('Reverse geocoding failed:', error);
+            return {
+                city: 'Unknown City',
+                street: 'Unknown Street',
+                country: 'Unknown Country'
+            };
+        }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -65,7 +91,19 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
                 if (tracePoints.length > 0) {
                     const data = await getEnvironmentalData(tracePoints[0].id);
                     setEnvData(data || []);
-                    console.log(envData);
+                    
+                    // Fetch location names for all coordinates
+                    const locationPromises = (data || []).map(async (item) => {
+                        const locationInfo = await reverseGeocode(item.x, item.y);
+                        return { coords: `${item.x},${item.y}`, info: locationInfo };
+                    });
+                    
+                    const locationResults = await Promise.all(locationPromises);
+                    const locationMap = new Map();
+                    locationResults.forEach(({ coords, info }) => {
+                        locationMap.set(coords, info);
+                    });
+                    setLocations(locationMap);
                 }
             } catch (e: any) {
                 console.error('Error loading environmental data:', e);
@@ -77,10 +115,49 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
         fetchData();
     }, [tracePoints]);
 
+    const toggleCard = (index: number) => {
+        const newExpanded = new Set(expandedCards);
+        if (newExpanded.has(index)) {
+            newExpanded.delete(index);
+        } else {
+            newExpanded.add(index);
+        }
+        setExpandedCards(newExpanded);
+    };
+
+    const formatDateShort = (ts: string | number) => {
+        const d = typeof ts === 'number' ? new Date(ts * 1000) : new Date(ts);
+        return d.toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'short',
+        });
+    };
+
+    const formatDateFull = (ts: string | number) => {
+        const d = typeof ts === 'number' ? new Date(ts * 1000) : new Date(ts);
+        return d.toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    };
+
+    const getLocationString = (x: string, y: string): string => {
+        const coords = `${x},${y}`;
+        const locationInfo = locations.get(coords);
+        if (locationInfo) {
+            return `${locationInfo.city}, ${locationInfo.street}`;
+        }
+        return `${x}, ${y}`;
+    };
+
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={Colors.primary} />
+                <Text style={styles.loadingText}>Loading locations...</Text>
             </View>
         );
     }
@@ -93,11 +170,10 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
         );
     }
 
-    // Split out manufacturer, distributors, and pharmacy based on location changes
+    // Split out manufacturer, distributors, and pharmacy
     const manufacturer = tracePoints[0];
     let pharmacyStartIndex = tracePoints.length - 1;
     
-    // Find the start of the pharmacy section by checking location changes
     for (let i = tracePoints.length - 1; i > 0; i--) {
         if (tracePoints[i].location !== tracePoints[i - 1].location) {
             pharmacyStartIndex = i;
@@ -108,93 +184,98 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
     const pharmacy = tracePoints[pharmacyStartIndex];
     const distributors = tracePoints.slice(1, pharmacyStartIndex);
 
-    const formatDate = (ts: string | number) => {
-        const d = typeof ts === 'number' ? new Date(ts * 1000) : new Date(ts);
-        return d.toLocaleDateString('fr-FR', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    };
-
-    const renderEnvironmentalCard = (
+    const renderExpandableCard = (
         data: EnvironmentalData,
         title: string,
         Icon: React.FC<any>,
-        actor: string,
-        location: string,
-        timestamp: string,
+        index: number,
         showMinMax: boolean = true
-    ) => (
-        <View style={[styles.card, styles.manufacturerCard]}>
-            <View style={styles.cardHeader}>
-                <Icon size={20} color="white" />
-                <Text style={styles.cardTitle}>{title}</Text>
-            </View>
-            <View style={styles.cardContent}>
-                <View style={styles.section}>
-                    <View style={styles.environmentRow}>
-                        <Thermometer size={16} />
-                        <Text style={styles.environmentText}>
-                            Avg Temp: {data.tempAvg}°C
-                        </Text>
+    ) => {
+        const isExpanded = expandedCards.has(index);
+        const dateShort = formatDateShort(data.timestamp);
+        const locationName = getLocationString(data.x, data.y);
+
+        return (
+            <View key={index} style={[styles.card, styles.expandableCard]}>
+                <TouchableOpacity 
+                    style={styles.cardHeader} 
+                    onPress={() => toggleCard(index)}
+                    activeOpacity={0.7}
+                >
+                    <View style={styles.headerLeft}>
+                        <Icon size={20} color="white" />
+                        <View>
+                            <Text style={styles.cardTitle}>{title}</Text>
+                            <Text style={styles.cardSubtitle}>{dateShort} • {locationName}</Text>
+                        </View>
                     </View>
-                    {showMinMax && (
-                        <>
-                            <View style={styles.environmentRow}>
-                                <Thermometer size={16} />
-                                <Text style={styles.environmentText}>
-                                    Max Temp: {data.tempMax}°C
-                                </Text>
-                            </View>
-                            <View style={styles.environmentRow}>
-                                <Thermometer size={16} />
-                                <Text style={styles.environmentText}>
-                                    Min Temp: {data.tempMin}°C
-                                </Text>
-                            </View>
-                        </>
+                    {isExpanded ? (
+                        <ChevronUp size={20} color="white" />
+                    ) : (
+                        <ChevronDown size={20} color="white" />
                     )}
-                    <View style={styles.environmentRow}>
-                        <Droplet size={16} />
-                        <Text style={styles.environmentText}>
-                            Avg Humidity: {data.humidAvg}%
-                        </Text>
-                    </View>
-                    {showMinMax && (
-                        <>
+                </TouchableOpacity>
+
+                {isExpanded && (
+                    <Animated.View style={styles.cardContent}>
+                        <View style={styles.section}>
                             <View style={styles.environmentRow}>
-                                <Droplet size={16} />
+                                <Thermometer size={16} color={Colors.primary} />
                                 <Text style={styles.environmentText}>
-                                    Max Humidity: {data.humidMax}%
+                                    Avg Temperature: {data.tempAvg}°C
                                 </Text>
                             </View>
+                            
+                            {showMinMax && (
+                                <View style={styles.minMaxRow}>
+                                    <Text style={styles.minMaxText}>
+                                        Min: {data.tempMin}°C • Max: {data.tempMax}°C
+                                    </Text>
+                                </View>
+                            )}
+
                             <View style={styles.environmentRow}>
-                                <Droplet size={16} />
+                                <Droplet size={16} color={Colors.primary} />
                                 <Text style={styles.environmentText}>
-                                    Min Humidity: {data.humidMin}%
+                                    Avg Humidity: {data.humidAvg}%
                                 </Text>
                             </View>
-                        </>
-                    )}
-                    <View style={styles.environmentRow}>
-                        <MapPin size={16} />
-                        <Text style={styles.environmentText}>
-                            Coords: ({data.x}, {data.y})
-                        </Text>
-                    </View>
-                    <View style={styles.environmentRow}>
-                        <Calendar size={16} />
-                        <Text style={styles.environmentText}>
-                            Timestamp: {formatDate(data.timestamp)}
-                        </Text>
-                    </View>
-                </View>
+
+                            {showMinMax && (
+                                <View style={styles.minMaxRow}>
+                                    <Text style={styles.minMaxText}>
+                                        Min: {data.humidMin}% • Max: {data.humidMax}%
+                                    </Text>
+                                </View>
+                            )}
+
+                            <View style={styles.divider} />
+
+                            <View style={styles.environmentRow}>
+                                <MapPin size={16} color={Colors.secondary} />
+                                <Text style={styles.environmentText}>
+                                    Location: {locationName}
+                                </Text>
+                            </View>
+
+                            <View style={styles.environmentRow}>
+                                <Calendar size={16} color={Colors.secondary} />
+                                <Text style={styles.environmentText}>
+                                    Full Date: {formatDateFull(data.timestamp)}
+                                </Text>
+                            </View>
+
+                            <View style={styles.coordsRow}>
+                                <Text style={styles.coordsText}>
+                                    Coordinates: {data.x}, {data.y}
+                                </Text>
+                            </View>
+                        </View>
+                    </Animated.View>
+                )}
             </View>
-        </View>
-    );
+        );
+    };
 
     return (
         <ScrollView
@@ -202,44 +283,33 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
             contentContainerStyle={styles.contentContainer}
         >
             {/* Manufacturer */}
-            {envData[0] &&
-                renderEnvironmentalCard(
-                    envData[0],
-                    'Manufacturing',
-                    Package,
-                    manufacturer.actor,
-                    manufacturer.location,
-                    manufacturer.timestamp,
-                    false // Don't show min/max for manufacturer
-                )}
+            {envData[0] && renderExpandableCard(
+                envData[0],
+                'Manufacturing',
+                Package,
+                0,
+                false
+            )}
 
             {/* Distributors */}
             {distributors.map((pt, idx) =>
-                envData[idx + 1]
-                    ? renderEnvironmentalCard(
-                        envData[idx + 1],
-                        `Distribution Checkpoint ${idx + 1}`,
-                        Truck,
-                        pt.actor,
-                        pt.location,
-                        pt.timestamp,
-                        true // Show min/max for distributors
-                    )
-                    : null
+                envData[idx + 1] ? renderExpandableCard(
+                    envData[idx + 1],
+                    `Distribution Checkpoint ${idx + 1}`,
+                    Truck,
+                    idx + 1,
+                    true
+                ) : null
             )}
 
             {/* Pharmacy */}
-            {pharmacy &&
-                envData[envData.length - 1] &&
-                renderEnvironmentalCard(
-                    envData[envData.length - 1],
-                    'Pharmacy',
-                    Building2,
-                    pharmacy.actor,
-                    pharmacy.location,
-                    pharmacy.timestamp,
-                    true // Show min/max for pharmacy
-                )}
+            {pharmacy && envData[envData.length - 1] && renderExpandableCard(
+                envData[envData.length - 1],
+                'Pharmacy',
+                Building2,
+                envData.length - 1,
+                true
+            )}
         </ScrollView>
     );
 };
@@ -251,12 +321,17 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         padding: 16,
-        gap: 16,
+        gap: 12,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        gap: 12,
+    },
+    loadingText: {
+        fontSize: 16,
+        color: Colors.text,
     },
     errorContainer: {
         flex: 1,
@@ -270,53 +345,83 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     card: {
-        borderRadius: 8,
+        borderRadius: 12,
         overflow: 'hidden',
         backgroundColor: Colors.white,
-        elevation: 2,
+        elevation: 3,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 3,
+        shadowRadius: 4,
     },
-    manufacturerCard: {
+    expandableCard: {
         borderLeftWidth: 4,
         borderLeftColor: Colors.primary,
     },
     cardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
-        gap: 8,
+        justifyContent: 'space-between',
+        padding: 16,
         backgroundColor: Colors.primary,
+    },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        flex: 1,
     },
     cardTitle: {
         fontSize: 16,
         fontWeight: '600',
         color: Colors.white,
     },
+    cardSubtitle: {
+        fontSize: 13,
+        color: Colors.white,
+        opacity: 0.9,
+        marginTop: 2,
+    },
     cardContent: {
         padding: 16,
-        gap: 12,
-    },
-    infoLabel: {
-        fontSize: 14,
-        color: Colors.text,
-        marginBottom: 4,
     },
     section: {
-        marginTop: 8,
-        gap: 6,
+        gap: 12,
     },
     environmentRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        marginBottom: 4,
+        gap: 8,
     },
     environmentText: {
-        fontSize: 13,
+        fontSize: 14,
         color: Colors.text,
+        flex: 1,
+    },
+    minMaxRow: {
+        marginLeft: 24,
+        marginTop: -4,
+    },
+    minMaxText: {
+        fontSize: 12,
+        color: Colors.textSecondary,
+        fontStyle: 'italic',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: Colors.border,
+        marginVertical: 8,
+    },
+    coordsRow: {
+        marginTop: 8,
+        padding: 8,
+        backgroundColor: Colors.lightBackground,
+        borderRadius: 6,
+    },
+    coordsText: {
+        fontSize: 12,
+        color: Colors.textSecondary,
+        fontFamily: 'monospace',
     },
 });
 

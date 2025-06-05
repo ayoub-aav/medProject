@@ -94,7 +94,7 @@
                 "p": "payload"
             }
         ],
-        "repeat": "60",
+        "repeat": "20",
         "crontab": "",
         "once": false,
         "onceDelay": "",
@@ -338,7 +338,7 @@
                 "p": "payload"
             }
         ],
-        "repeat": "60",
+        "repeat": "20",
         "crontab": "",
         "once": false,
         "onceDelay": "",

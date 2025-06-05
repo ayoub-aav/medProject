@@ -221,14 +221,14 @@ function Pharmacy() {
         {/* Storage Management Section */}
         <Card className="p-8 rounded-2xl shadow-xl bg-white/90 backdrop-blur-sm mb-8"> {/* Styled card */}
           <Typography variant="h4" className="mb-6 font-semibold text-gray-800 border-b pb-4 border-gray-200"> {/* Styled heading */}
-            Cold Chain Management
+            Pharmacy
           </Typography>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"> {/* Increased gap */}
             <div className="flex items-center gap-3"> {/* Added flex for icon alignment */}
               <Thermometer className="text-blue-500 h-6 w-6" /> {/* Thermometer icon */}
               <Input
-                label="Refrigeration Unit ID"
+                label="IoT Device ID"
                 value={storageUnitId}
                 onChange={(e) => setStorageUnitId(e.target.value)}
                 size="lg" // Larger input
@@ -237,7 +237,7 @@ function Pharmacy() {
             <div className="flex items-center gap-3"> {/* Added flex for icon alignment */}
               <Box className="text-purple-500 h-6 w-6" /> {/* Box icon */}
               <Input
-                label="Vaccine Batch ID"
+                label="Box ID"
                 value={batchId}
                 onChange={(e) => setBatchId(e.target.value)}
                 size="lg" // Larger input

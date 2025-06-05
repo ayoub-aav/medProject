@@ -35,7 +35,6 @@ export interface EnvironmentalData {
     timestamp: number;
 }
 
-
 export interface TracePoint {
     id: string;
     action: string;
@@ -51,7 +50,6 @@ interface RawMaterial {
     fournisseur: string;
     degrePurete: string;
 }
-
 
 interface TraceTimelineProps {
     tracePoints: TracePoint[];
@@ -78,7 +76,7 @@ const ExpandableCard = ({
 }: ExpandableCardProps) => {
     const [expanded, setExpanded] = useState(false);
     const [address, setAddress] = useState('');
-    const animatedHeight = new Animated.Value(0);
+    const [animatedHeight] = useState(new Animated.Value(0));
 
     useEffect(() => {
         // Fetch address from coordinates
@@ -105,9 +103,11 @@ const ExpandableCard = ({
     }, [data.x, data.y]);
 
     const toggleExpand = () => {
-        setExpanded(!expanded);
+        const newExpanded = !expanded;
+        setExpanded(newExpanded);
+        
         Animated.timing(animatedHeight, {
-            toValue: expanded ? 0 : 1,
+            toValue: newExpanded ? 1 : 0,
             duration: 300,
             useNativeDriver: false,
         }).start();
@@ -123,7 +123,7 @@ const ExpandableCard = ({
 
     const contentHeight = animatedHeight.interpolate({
         inputRange: [0, 1],
-        outputRange: [0, 300], // Adjust this value based on your content height
+        outputRange: [0, 250], // Reduced height for better fit
     });
 
     return (
@@ -155,7 +155,11 @@ const ExpandableCard = ({
                     </Animated.View>
                 </View>
             </TouchableOpacity>
-            <Animated.View style={{ height: contentHeight, overflow: 'hidden' }}>
+            <Animated.View style={{ 
+                height: contentHeight, 
+                overflow: 'hidden',
+                opacity: animatedHeight // Add opacity animation for smoother transition
+            }}>
                 <View style={styles.cardContent}>
                     <View style={styles.section}>
                         <View style={styles.environmentRow}>
@@ -232,7 +236,7 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
                 if (tracePoints.length > 0) {
                     const data = await getEnvironmentalData(tracePoints[0].id);
                     setEnvData(data || []);
-                    console.log(envData);
+                    console.log('Environmental data loaded:', data);
                 }
             } catch (e: any) {
                 console.error('Error loading environmental data:', e);
@@ -260,66 +264,46 @@ const TraceTimeline = ({ tracePoints = [] }: TraceTimelineProps) => {
         );
     }
 
-    // Split out manufacturer, distributors, and pharmacy based on location changes
-    const manufacturer = tracePoints[0];
-    let pharmacyStartIndex = tracePoints.length - 1;
-    
-    // Find the start of the pharmacy section by checking location changes
-    for (let i = tracePoints.length - 1; i > 0; i--) {
-        if (tracePoints[i].location !== tracePoints[i - 1].location) {
-            pharmacyStartIndex = i;
-            break;
+    // Helper function to determine the appropriate icon and title for each data point
+    const getCardInfo = (index: number, total: number) => {
+        if (index === 0) {
+            return { Icon: Package, title: 'Manufacturing', showMinMax: false };
+        } else if (index === total - 1) {
+            return { Icon: Building2, title: 'Pharmacy', showMinMax: true };
+        } else {
+            return { Icon: Truck, title: `Distribution Checkpoint ${index}`, showMinMax: true };
         }
-    }
-    
-    const pharmacy = tracePoints[pharmacyStartIndex];
-    const distributors = tracePoints.slice(1, pharmacyStartIndex);
+    };
 
     return (
         <ScrollView
             style={styles.container}
             contentContainerStyle={styles.contentContainer}
         >
-            {/* Manufacturer */}
-            {envData[0] && (
-                <ExpandableCard
-                    data={envData[0]}
-                    title="Manufacturing"
-                    Icon={Package}
-                    actor={manufacturer.actor}
-                    location={manufacturer.location}
-                    timestamp={manufacturer.timestamp}
-                    showMinMax={false}
-                />
-            )}
-
-            {/* Distributors */}
-            {distributors.map((pt, idx) =>
-                envData[idx + 1] ? (
-                    <ExpandableCard
-                        key={pt.id}
-                        data={envData[idx + 1]}
-                        title={`Distribution Checkpoint ${idx + 1}`}
-                        Icon={Truck}
-                        actor={pt.actor}
-                        location={pt.location}
-                        timestamp={pt.timestamp}
-                        showMinMax={true}
-                    />
-                ) : null
-            )}
-
-            {/* Pharmacy */}
-            {pharmacy && envData[envData.length - 1] && (
-                <ExpandableCard
-                    data={envData[envData.length - 1]}
-                    title="Pharmacy"
-                    Icon={Building2}
-                    actor={pharmacy.actor}
-                    location={pharmacy.location}
-                    timestamp={pharmacy.timestamp}
-                    showMinMax={true}
-                />
+            {envData.length > 0 ? (
+                envData.map((data, index) => {
+                    const { Icon, title, showMinMax } = getCardInfo(index, envData.length);
+                    
+                    // Use corresponding trace point if available, otherwise use first one as fallback
+                    const tracePoint = tracePoints[index] || tracePoints[0];
+                    
+                    return (
+                        <ExpandableCard
+                            key={`env-data-${index}`}
+                            data={data}
+                            title={title}
+                            Icon={Icon}
+                            actor={tracePoint.actor}
+                            location={tracePoint.location}
+                            timestamp={tracePoint.timestamp}
+                            showMinMax={showMinMax}
+                        />
+                    );
+                })
+            ) : (
+                <View style={styles.noDataContainer}>
+                    <Text style={styles.noDataText}>No environmental data available</Text>
+                </View>
             )}
         </ScrollView>
     );
@@ -348,6 +332,17 @@ const styles = StyleSheet.create({
     errorText: {
         fontSize: 16,
         color: Colors.error,
+        textAlign: 'center',
+    },
+    noDataContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 16,
+    },
+    noDataText: {
+        fontSize: 16,
+        color: Colors.text,
         textAlign: 'center',
     },
     card: {

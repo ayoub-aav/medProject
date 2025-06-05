@@ -514,8 +514,8 @@ module.exports = {
    functionGlobalContext: {
     Pinata: require('./pinataInstance'),
     Web3: require('web3').Web3,
-    PINATA_API_KEY: "31c25bdfd50c539775bf",
-    PINATA_SECRET_KEY: "0e26c772ad853217ed25ddf207d7e3b6f2d4b78acdc5d1c333dbb57447472ead",
+    PINATA_API_KEY: "<PINATA_API_KEY>",
+    PINATA_SECRET_KEY: "<PINATA_SECRET_KEY>",
     fs: require('fs'),
     path: require('path'),
     medecinJsonPath: 'C:\\Users\\HP\\Documents\\GitHub\\medproject\\MEDPROJECT-Web\\src\\build\\Medecin.json'

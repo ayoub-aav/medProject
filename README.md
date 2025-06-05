@@ -216,6 +216,6 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - **Prof. Nouhaila Elakrami**: For her valuable insights.
 
 ## Contact
-- **Team Members**: Amina Miskar, Zineb Elhalla, Ayoub Harati, Aya El Abidi
+- **Team Members**: Amina Miskar, Ayoub Harati, Zineb Elhalla, Aya El Abidi
 - **Institution**: National School of Applied Sciences El Jadida (ENSAJ)
 - **Supervisor**: Prof. Mohamed Hanine

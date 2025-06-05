@@ -3,7 +3,7 @@
         "id": "f6771373b69cb070",
         "type": "tab",
         "label": "IOT (Distributor 1)",
-        "disabled": false,
+        "disabled": true,
         "info": "",
         "env": []
     },
@@ -11,6 +11,14 @@
         "id": "5a4242869b013df1",
         "type": "tab",
         "label": "IOT (Distributor 2)",
+        "disabled": true,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "a1e6d8509d40be13",
+        "type": "tab",
+        "label": "IOT (Pharmacy 1)",
         "disabled": true,
         "info": "",
         "env": []
@@ -129,7 +137,7 @@
         "type": "function",
         "z": "f6771373b69cb070",
         "name": "Appeler addDailyAggregatedData",
-        "func": "// Retrieve the file path from global context\nconst jsonPath = global.get('medecinJsonPath');\nconst fs = global.get('fs');\nconst Web3Class = global.get('Web3'); // This is the Web3 class, not an instance\n\n// Read and parse contract data\nlet contractData;\ntry {\n  contractData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));\n} catch (err) {\n  node.error(\"Failed to read contract file: \" + err.message, msg);\n  return null;\n}\n\n// Extract required values\nconst abi = contractData.abi;\nconst contractAddress = contractData.networks['5777'].address;\n\n// Initialize Web3 instance\nconst web3 = new Web3Class('http://127.0.0.1:7545'); // Create instance here\n\n// Get accounts using the Web3 INSTANCE\nlet accounts;\ntry {\n  accounts = await web3.eth.getAccounts();\n} catch (err) {\n  node.error(\"Failed to get accounts: \" + err.message, msg);\n  return null;\n}\nconst account = accounts[0];\n\n// Initialize contract\nconst contract = new web3.eth.Contract(abi, contractAddress);\n\n// Validate incoming payload\nconst combinedPayload = msg.payload;\nconst requiredParams = [\n  'minTemp', 'maxTemp', 'avgTemp',\n  'minHum', 'maxHum', 'avgHum',\n  'aggregationTimestamp', 'ipfsHash', 'x', 'y'\n];\n\nif (!combinedPayload || requiredParams.some(param => combinedPayload[param] === undefined)) {\n  node.error(\"Missing required parameters in payload\", msg);\n  return null;\n}\n\n// Prepare contract call\nconst environmentalData = {\n  tempMax: combinedPayload.maxTemp,\n  tempMin: combinedPayload.minTemp,\n  tempAvg: combinedPayload.avgTemp,\n  humidMax: combinedPayload.maxHum,\n  humidMin: combinedPayload.minHum,\n  humidAvg: combinedPayload.avgHum,\n  x: combinedPayload.x,\n  y: combinedPayload.y,\n  timestamp: combinedPayload.aggregationTimestamp\n};\n\nconst iotId = \"dist2\"; // Hardcoded IoT ID\n\n// Execute contract method\ntry {\n  const receipt = await contract.methods.recordEnvironmentalData(\n    iotId,\n    environmentalData\n  ).send({ from: account, gas: 5000000 });\n  \n  msg.payload = {\n    transactionHash: receipt.transactionHash,\n    blockNumber: receipt.blockNumber,\n    status: receipt.status ? \"Success\" : \"Failed\"\n  };\n  return msg;\n} catch (err) {\n  node.error(\"Contract error: \" + err.message, msg);\n  msg.error = err;\n  return msg;\n}",
+        "func": "// Retrieve the file path from global context\nconst jsonPath = global.get('medecinJsonPath');\nconst fs = global.get('fs');\nconst Web3Class = global.get('Web3');\n\n// Read and parse contract data\nlet contractData;\ntry {\n  contractData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));\n} catch (err) {\n  node.error(\"Failed to read contract file: \" + err.message, msg);\n  return null;\n}\n\n// Extract required values\nconst abi = contractData.abi;\nconst contractAddress = contractData.networks['5777'].address;\n\n// Initialize Web3 instance\nconst web3 = new Web3Class('http://127.0.0.1:7545'); // Create instance here\n\n// Get accounts using the Web3 INSTANCE\nlet accounts;\ntry {\n  accounts = await web3.eth.getAccounts();\n} catch (err) {\n  node.error(\"Failed to get accounts: \" + err.message, msg);\n  return null;\n}\nconst account = accounts[0];\n\n// Initialize contract\nconst contract = new web3.eth.Contract(abi, contractAddress);\n\n// Validate incoming payload\nconst combinedPayload = msg.payload;\nconst requiredParams = [\n  'minTemp', 'maxTemp', 'avgTemp',\n  'minHum', 'maxHum', 'avgHum',\n  'aggregationTimestamp', 'ipfsHash', 'x', 'y'\n];\n\nif (!combinedPayload || requiredParams.some(param => combinedPayload[param] === undefined)) {\n  node.error(\"Missing required parameters in payload\", msg);\n  return null;\n}\n\n// Prepare contract call\nconst environmentalData = {\n  tempMax: combinedPayload.maxTemp,\n  tempMin: combinedPayload.minTemp,\n  tempAvg: combinedPayload.avgTemp,\n  humidMax: combinedPayload.maxHum,\n  humidMin: combinedPayload.minHum,\n  humidAvg: combinedPayload.avgHum,\n  x: combinedPayload.x,\n  y: combinedPayload.y,\n  timestamp: combinedPayload.aggregationTimestamp\n};\n\nconst iotId = \"dist1\"; // Hardcoded IoT ID\n\n// Execute contract method\ntry {\n  const receipt = await contract.methods.recordEnvironmentalData(\n    iotId,\n    environmentalData\n  ).send({ from: account, gas: 5000000 });\n  \n  msg.payload = {\n    transactionHash: receipt.transactionHash,\n    blockNumber: receipt.blockNumber,\n    status: receipt.status ? \"Success\" : \"Failed\"\n  };\n  return msg;\n} catch (err) {\n  node.error(\"Contract error: \" + err.message, msg);\n  msg.error = err;\n  return msg;\n}",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -166,7 +174,7 @@
         "type": "function",
         "z": "f6771373b69cb070",
         "name": "Pin Daily Aggregated JSON to IPFS",
-        "func": "const pinata = new pinataSDK('a7bdc267ed0265929e7c', 'd7be16a16154e47ad3117effeb405f20e9be6447806fabd8f104e19dae8c8d47');\n\n\nconst aggregatedJson = msg.payload;\n\nconst options = {\n    pinataMetadata: {\n        name: `daily_raw_iot_data_${aggregatedJson.aggregationTimestamp}`,\n        keyvalues: {\n            aggregationTimestamp: aggregatedJson.aggregationTimestamp,\n            dataPointsCount: aggregatedJson.dataPoints.length\n        }\n    },\n    pinataOptions: {\n        cidVersion: 0\n    }\n};\n\n// Pin the aggregated JSON data to IPFS\npinata.pinJSONToIPFS(aggregatedJson, options).then((result) => {\n    msg.payload = result; // The result includes the IpfsHash and other details\n    node.send([ msg, null ]); // Send success to the first output\n}).catch((err) => {\n    msg.payload = err; // Send the error to the payload\n    node.error(\"Error pinning daily raw data to Pinata:\", err);\n    node.send([ null, msg ]); // Send error to the second output\n});\n\n// No need to return msg here as we are handling outputs within the .then() and .catch()",
+        "func": "const apiKey = global.get(\"PINATA_API_KEY\");\nconst secretKey = global.get(\"PINATA_SECRET_KEY\");\n\nif (!apiKey || !secretKey) {\n    // If you see this, check that you restarted Node-RED and updated settings.js correctly.\n    node.error(\"Missing PINATA_API_KEY or PINATA_SECRET_KEY in functionGlobalContext.\");\n    return null;\n}\n\nconst pinata = new pinataSDK(apiKey, secretKey);\n\nconst aggregatedJson = msg.payload;\n\nconst options = {\n    pinataMetadata: {\n        name: `daily_raw_iot_data_${aggregatedJson.aggregationTimestamp}`,\n        keyvalues: {\n            aggregationTimestamp: aggregatedJson.aggregationTimestamp,\n            dataPointsCount: aggregatedJson.dataPoints.length\n        }\n    },\n    pinataOptions: {\n        cidVersion: 0\n    }\n};\n\n// Pin the aggregated JSON data to IPFS\npinata.pinJSONToIPFS(aggregatedJson, options).then((result) => {\n    msg.payload = result; // The result includes the IpfsHash and other details\n    node.send([ msg, null ]); // Send success to the first output\n}).catch((err) => {\n    msg.payload = err; // Send the error to the payload\n    node.error(\"Error pinning daily raw data to Pinata:\", err);\n    node.send([ null, msg ]); // Send error to the second output\n});\n\n// No need to return msg here as we are handling outputs within the .then() and .catch()",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
@@ -257,24 +265,6 @@
             [
                 "0f22d077a2da1c2e"
             ]
-        ]
-    },
-    {
-        "id": "load_contract_info",
-        "type": "function",
-        "z": "f6771373b69cb070",
-        "name": "Load Contract Info",
-        "func": "// Load the contract information from the JSON file\nconst fs = require('fs');\nconst path = require('path');\n\n// Path to the Medecin.json file\nconst contractPath = path.join(process.cwd(), 'src', 'build', 'Medecin.json');\n\n// Read and parse the contract file\ntry {\n    const contractData = JSON.parse(fs.readFileSync(contractPath, 'utf8'));\n    \n    // Store the contract information in flow context\n    flow.set('contractABI', contractData.abi);\n    flow.set('contractAddress', contractData.networks['5777'].address); // For local Ganache network\n    \n    // You can also store the account address in a configuration file or environment variable\n    // For now, we'll keep it in the flow context\n    flow.set('accountAddress', '0xf32e108724d21509C83675b7d25209eCB5bCbE72');\n    \n    node.log('Contract information loaded successfully');\n    return msg;\n} catch (error) {\n    node.error('Error loading contract information: ' + error.message);\n    return null;\n}",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 100,
-        "y": 100,
-        "wires": [
-            []
         ]
     },
     {
@@ -391,7 +381,7 @@
         "type": "function",
         "z": "5a4242869b013df1",
         "name": "Appeler addDailyAggregatedData",
-        "func": "// Utiliser Web3 et votre ABI\nconst Web3 = global.get('Web3');\nconst web3 = new Web3('http://127.0.0.1:7545');\nconst contractAddress = '0x1ccb84a2DD3bCaAD2b456bC09E3Db0Bb086aA8c0'; // votre adresse\n\n// **This is the correct ABI provided in your request**\nconst abi = [\n    {\n      \"anonymous\": false,\n      \"inputs\": [\n        {\n          \"indexed\": true,\n          \"internalType\": \"string\",\n          \"name\": \"boxId\",\n          \"type\": \"string\"\n        },\n        {\n          \"indexed\": false,\n          \"internalType\": \"uint256\",\n          \"name\": \"lotId\",\n          \"type\": \"uint256\"\n        },\n        {\n          \"indexed\": false,\n          \"internalType\": \"uint256\",\n          \"name\": \"medicamentCount\",\n          \"type\": \"uint256\"\n        }\n      ],\n      \"name\": \"BoxAssembled\",\n      \"type\": \"event\"\n    },\n    {\n      \"anonymous\": false,\n      \"inputs\": [\n        {\n          \"indexed\": true,\n          \"internalType\": \"string\",\n          \"name\": \"iotId\",\n          \"type\": \"string\"\n        },\n        {\n          \"indexed\": true,\n          \"internalType\": \"string\",\n          \"name\": \"boxId\",\n          \"type\": \"string\"\n        },\n        {\n          \"indexed\": false,\n          \"internalType\": \"uint256\",\n          \"name\": \"timestamp\",\n          \"type\": \"uint256\"\n        }\n      ],\n      \"name\": \"BoxAssignedToIoT\",\n      \"type\": \"event\"\n    },\n    {\n      \"anonymous\": false,\n      \"inputs\": [\n        {\n          \"indexed\": true,\n          \"internalType\": \"string\",\n          \"name\": \"iotId\",\n          \"type\": \"string\"\n        },\n        {\n          \"indexed\": false,\n          \"internalType\": \"string\",\n          \"name\": \"medicamentId\",\n          \"type\": \"string\"\n        },\n        {\n          \"indexed\": false,\n          \"internalType\": \"uint256\",\n          \"name\": \"timestamp\",\n          \"type\": \"uint256\"\n        }\n      ],\n      \"name\": \"EnvironmentalDataRecorded\",\n      \"type\": \"event\"\n    },\n    {\n      \"anonymous\": false,\n      \"inputs\": [\n        {\n          \"indexed\": true,\n          \"internalType\": \"uint256\",\n          \"name\": \"lotId\",\n          \"type\": \"uint256\"\n        },\n        {\n          \"indexed\": false,\n          \"internalType\": \"string\",\n          \"name\": \"nomMedicament\",\n          \"type\": \"string\"\n        },\n        {\n          \"indexed\": false,\n          \"internalType\": \"uint256\",\n          \"name\": \"timestamp\",\n          \"type\": \"uint256\"\n        }\n      ],\n      \"name\": \"LotCree\",\n      \"type\": \"event\"\n    },\n    {\n      \"anonymous\": false,\n      \"inputs\": [\n        {\n          \"indexed\": true,\n          \"internalType\": \"string\",\n          \"name\": \"medicamentId\",\n          \"type\": \"string\"\n        },\n        {\n          \"indexed\": false,\n          \"internalType\": \"uint256\",\n          \"name\": \"lotId\",\n          \"type\": \"uint256\"\n        }\n      ],\n      \"name\": \"MedicamentCreated\",\n      \"type\": \"event\"\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"uint256\",\n          \"name\": \"\",\n          \"type\": \"uint256\"\n        }\n      ],\n      \"name\": \"allBoxIds\",\n      \"outputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"\",\n          \"type\": \"string\"\n        }\n      ],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\",\n      \"constant\": true\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"\",\n          \"type\": \"string\"\n        }\n      ],\n      \"name\": \"boxToIot\",\n      \"outputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"\",\n          \"type\": \"string\"\n        }\n      ],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\",\n      \"constant\": true\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"\",\n          \"type\": \"string\"\n        },\n        {\n          \"internalType\": \"uint256\",\n          \"name\": \"\",\n          \"type\": \"uint256\"\n        }\n      ],\n      \"name\": \"boxToMedicaments\",\n      \"outputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"\",\n          \"type\": \"string\"\n        }\n      ],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\",\n      \"constant\": true\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"uint256\",\n          \"name\": \"\",\n          \"type\": \"uint256\"\n        }\n      ],\n      \"name\": \"lots\",\n      \"outputs\": [\n        {\n          \"internalType\": \"uint256\",\n          \"name\": \"lotId\",\n          \"type\": \"uint256\"\n        },\n        {\n          \"internalType\": \"string\",\n          \"name\": \"nomMedicament\",\n          \"type\": \"string\"\n        },\n        {\n          \"internalType\": \"string\",\n          \"name\": \"substanceActive\",\n          \"type\": \"string\"\n        },\n        {\n          \"internalType\": \"string\",\n          \"name\": \"forme\",\n          \"type\": \"string\"\n        },\n        {\n          \"internalType\": \"string\",\n          \"name\": \"dateFabrication\",\n          \"type\": \"string\"\n        },\n        {\n          \"internalType\": \"string\",\n          \"name\": \"datePeremption\",\n          \"type\": \"string\"\n        },\n        {\n          \"internalType\": \"string\",\n          \"name\": \"nomFabricant\",\n          \"type\": \"string\"\n        },\n        {\n          \"internalType\": \"string\",\n          \"name\": \"paysOrigine\",\n          \"type\": \"string\"\n        },\n        {\n          \"internalType\": \"string\",\n          \"name\": \"amm\",\n          \"type\": \"string\"\n        },\n        {\n          \"components\": [\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"temperatureMax\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"temperatureMin\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humiditeMax\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humiditeMin\",\n              \"type\": \"uint8\"\n            }\n          ],\n          \"internalType\": \"struct Medecin.Conservation\",\n          \"name\": \"conditionsConservation\",\n          \"type\": \"tuple\"\n        },\n        {\n          \"internalType\": \"uint256\",\n          \"name\": \"timestamp\",\n          \"type\": \"uint256\"\n        }\n      ],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\",\n      \"constant\": true\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"\",\n          \"type\": \"string\"\n        }\n      ],\n      \"name\": \"medicaments\",\n      \"outputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"medicamentId\",\n          \"type\": \"string\"\n        },\n        {\n          \"internalType\": \"uint256\",\n          \"name\": \"lotId\",\n          \"type\": \"uint256\"\n        },\n        {\n          \"internalType\": \"bool\",\n          \"name\": \"sold\",\n          \"type\": \"bool\"\n        },\n        {\n          \"internalType\": \"uint256\",\n          \"name\": \"timestampCreation\",\n          \"type\": \"uint256\"\n        }\n      ],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\",\n      \"constant\": true\n    },\n    {\n      \"inputs\": [],\n      \"name\": \"nextLotId\",\n      \"outputs\": [\n        {\n          \"internalType\": \"uint256\",\n          \"name\": \"\",\n          \"type\": \"uint256\"\n        }\n      ],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\",\n      \"constant\": true\n    },\n    {\n      \"inputs\": [\n        {\n          \"components\": [\n            {\n              \"internalType\": \"string\",\n              \"name\": \"nomMedicament\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"substanceActive\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"forme\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"dateFabrication\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"datePeremption\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"nomFabricant\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"paysOrigine\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"amm\",\n              \"type\": \"string\"\n            }\n          ],\n          \"internalType\": \"struct Medecin.LotDetails\",\n          \"name\": \"_lotDetails\",\n          \"type\": \"tuple\"\n        },\n        {\n          \"components\": [\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"temperatureMax\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"temperatureMin\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humiditeMax\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humiditeMin\",\n              \"type\": \"uint8\"\n            }\n          ],\n          \"internalType\": \"struct Medecin.Conservation\",\n          \"name\": \"_conservation\",\n          \"type\": \"tuple\"\n        },\n        {\n          \"components\": [\n            {\n              \"internalType\": \"string\",\n              \"name\": \"nom\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"origine\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"fournisseur\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"degrePurete\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"quantiteParUnite\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"certificatAnalyse\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"dateReception\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"transport\",\n              \"type\": \"string\"\n            }\n          ],\n          \"internalType\": \"struct Medecin.MatierePremiere[]\",\n          \"name\": \"_matieresPremieresLot\",\n          \"type\": \"tuple[]\"\n        }\n      ],\n      \"name\": \"creerLotMedicament\",\n      \"outputs\": [\n        {\n          \"internalType\": \"uint256\",\n          \"name\": \"\",\n          \"type\": \"uint256\"\n        }\n      ],\n      \"stateMutability\": \"nonpayable\",\n      \"type\": \"function\"\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"string[]\",\n          \"name\": \"_medicamentIds\",\n          \"type\": \"string[]\"\n        },\n        {\n          \"internalType\": \"uint256\",\n          \"name\": \"_lotId\",\n          \"type\": \"uint256\"\n        },\n        {\n          \"components\": [\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"tempMax\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"tempMin\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"tempAvg\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humidMax\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humidMin\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humidAvg\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"x\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"y\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"uint256\",\n              \"name\": \"timestamp\",\n              \"type\": \"uint256\"\n            }\n          ],\n          \"internalType\": \"struct Medecin.EnvironmentalData\",\n          \"name\": \"_envData\",\n          \"type\": \"tuple\"\n        }\n      ],\n      \"name\": \"createMedicamentUnits\",\n      \"outputs\": [],\n      \"stateMutability\": \"nonpayable\",\n      \"type\": \"function\"\n    },\n    {\n      \"inputs\": [\n        {\n          \"components\": [\n            {\n              \"internalType\": \"string\",\n              \"name\": \"boxId\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string[]\",\n              \"name\": \"medicamentIds\",\n              \"type\": \"string[]\"\n            }\n          ],\n          \"internalType\": \"struct Medecin.Box[]\",\n          \"name\": \"_boxes\",\n          \"type\": \"tuple[]\"\n        },\n        {\n          \"internalType\": \"uint256\",\n          \"name\": \"_lotId\",\n          \"type\": \"uint256\"\n        },\n        {\n          \"components\": [\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"tempMax\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"tempMin\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"tempAvg\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humidMax\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humidMin\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humidAvg\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"x\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"y\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"uint256\",\n              \"name\": \"timestamp\",\n              \"type\": \"uint256\"\n            }\n          ],\n          \"internalType\": \"struct Medecin.EnvironmentalData\",\n          \"name\": \"_envData\",\n          \"type\": \"tuple\"\n        }\n      ],\n      \"name\": \"createAndAssignMedicaments\",\n      \"outputs\": [],\n      \"stateMutability\": \"nonpayable\",\n      \"type\": \"function\"\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"_iotId\",\n          \"type\": \"string\"\n        },\n        {\n          \"internalType\": \"string\",\n          \"name\": \"_boxId\",\n          \"type\": \"string\"\n        }\n      ],\n      \"name\": \"assignBoxToIoT\",\n      \"outputs\": [],\n      \"stateMutability\": \"nonpayable\",\n      \"type\": \"function\"\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"_iotId\",\n          \"type\": \"string\"\n        },\n        {\n          \"components\": [\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"tempMax\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"tempMin\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"tempAvg\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humidMax\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humidMin\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humidAvg\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"x\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"y\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"uint256\",\n              \"name\": \"timestamp\",\n              \"type\": \"uint256\"\n            }\n          ],\n          \"internalType\": \"struct Medecin.EnvironmentalData\",\n          \"name\": \"data\",\n          \"type\": \"tuple\"\n        }\n      ],\n      \"name\": \"recordEnvironmentalData\",\n      \"outputs\": [\n        {\n          \"internalType\": \"bool\",\n          \"name\": \"\",\n          \"type\": \"bool\"\n        }\n      ],\n      \"stateMutability\": \"nonpayable\",\n      \"type\": \"function\"\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"_iotId\",\n          \"type\": \"string\"\n        }\n      ],\n      \"name\": \"getBoxesForIoT\",\n      \"outputs\": [\n        {\n          \"internalType\": \"string[]\",\n          \"name\": \"\",\n          \"type\": \"string[]\"\n        }\n      ],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\",\n      \"constant\": true\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"_medicamentId\",\n          \"type\": \"string\"\n        }\n      ],\n      \"name\": \"getEnvironmentalHistory\",\n      \"outputs\": [\n        {\n          \"components\": [\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"tempMax\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"tempMin\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"int8\",\n              \"name\": \"tempAvg\",\n              \"type\": \"int8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humidMax\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humidMin\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"uint8\",\n              \"name\": \"humidAvg\",\n              \"type\": \"uint8\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"x\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"y\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"uint256\",\n              \"name\": \"timestamp\",\n              \"type\": \"uint256\"\n            }\n          ],\n          \"internalType\": \"struct Medecin.EnvironmentalData[]\",\n          \"name\": \"\",\n          \"type\": \"tuple[]\"\n        }\n      ],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\",\n      \"constant\": true\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"_medicamentId\",\n          \"type\": \"string\"\n        }\n      ],\n      \"name\": \"getProductInfo\",\n      \"outputs\": [\n        {\n          \"components\": [\n            {\n              \"internalType\": \"string\",\n              \"name\": \"id\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"name\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"manufacturer\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"manufactureDate\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"expiryDate\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"batchNumber\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"substanceActive\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"forme\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"paysOrigine\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"amm\",\n              \"type\": \"string\"\n            },\n            {\n              \"components\": [\n                {\n                  \"internalType\": \"int8\",\n                  \"name\": \"temperatureMax\",\n                  \"type\": \"int8\"\n                },\n                {\n                  \"internalType\": \"int8\",\n                  \"name\": \"temperatureMin\",\n                  \"type\": \"int8\"\n                },\n                {\n                  \"internalType\": \"uint8\",\n                  \"name\": \"humiditeMax\",\n                  \"type\": \"uint8\"\n                },\n                {\n                  \"internalType\": \"uint8\",\n                  \"name\": \"humiditeMin\",\n                  \"type\": \"uint8\"\n                }\n              ],\n              \"internalType\": \"struct Medecin.Conservation\",\n              \"name\": \"conditionsConservation\",\n              \"type\": \"tuple\"\n            },\n            {\n              \"components\": [\n                {\n                  \"internalType\": \"int8\",\n                  \"name\": \"tempMax\",\n                  \"type\": \"int8\"\n                },\n                {\n                  \"internalType\": \"int8\",\n                  \"name\": \"tempMin\",\n                  \"type\": \"int8\"\n                },\n                {\n                  \"internalType\": \"int8\",\n                  \"name\": \"tempAvg\",\n                  \"type\": \"int8\"\n                },\n                {\n                  \"internalType\": \"uint8\",\n                  \"name\": \"humidMax\",\n                  \"type\": \"uint8\"\n                },\n                {\n                  \"internalType\": \"uint8\",\n                  \"name\": \"humidMin\",\n                  \"type\": \"uint8\"\n                },\n                {\n                  \"internalType\": \"uint8\",\n                  \"name\": \"humidAvg\",\n                  \"type\": \"uint8\"\n                },\n                {\n                  \"internalType\": \"string\",\n                  \"name\": \"x\",\n                  \"type\": \"string\"\n                },\n                {\n                  \"internalType\": \"string\",\n                  \"name\": \"y\",\n                  \"type\": \"string\"\n                },\n                {\n                  \"internalType\": \"uint256\",\n                  \"name\": \"timestamp\",\n                  \"type\": \"uint256\"\n                }\n              ],\n              \"internalType\": \"struct Medecin.EnvironmentalData\",\n              \"name\": \"latestConditions\",\n              \"type\": \"tuple\"\n            },\n            {\n              \"internalType\": \"bool\",\n              \"name\": \"sold\",\n              \"type\": \"bool\"\n            }\n          ],\n          \"internalType\": \"struct Medecin.ProductInfo\",\n          \"name\": \"\",\n          \"type\": \"tuple\"\n        }\n      ],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\",\n      \"constant\": true\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"_medicamentId\",\n          \"type\": \"string\"\n        }\n      ],\n      \"name\": \"getRawMaterials\",\n      \"outputs\": [\n        {\n          \"components\": [\n            {\n              \"internalType\": \"string\",\n              \"name\": \"nom\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"origine\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"fournisseur\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"degrePurete\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"quantiteParUnite\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"certificatAnalyse\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"dateReception\",\n              \"type\": \"string\"\n            },\n            {\n              \"internalType\": \"string\",\n              \"name\": \"transport\",\n              \"type\": \"string\"\n            }\n          ],\n          \"internalType\": \"struct Medecin.MatierePremiere[]\",\n          \"name\": \"\",\n          \"type\": \"tuple[]\"\n        }\n      ],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\",\n      \"constant\": true\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"_medicamentId\",\n          \"type\": \"string\"\n        }\n      ],\n      \"name\": \"medicamentExists\",\n      \"outputs\": [\n        {\n          \"internalType\": \"bool\",\n          \"name\": \"\",\n          \"type\": \"bool\"\n        }\n      ],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\",\n      \"constant\": true\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"string\",\n          \"name\": \"_medicamentId\",\n          \"type\": \"string\"\n        }\n      ],\n      \"name\": \"markMedicamentAsSold\",\n      \"outputs\": [],\n      \"stateMutability\": \"nonpayable\",\n      \"type\": \"function\"\n    }\n  ];\nconst contract = new web3.eth.Contract(abi, contractAddress);\n\nconst account = '0xf32e108724d21509C83675b7d25209eCB5bCbE72'; // votre compte\n\n// The incoming message payload contains the combined data from previous nodes\nconst combinedPayload = msg.payload;\n\n// Check if all required parameters are present\nif (combinedPayload === undefined ||\n  combinedPayload.minTemp === undefined ||\n  combinedPayload.maxTemp === undefined ||\n  combinedPayload.avgTemp === undefined ||\n  combinedPayload.minHum === undefined ||\n  combinedPayload.maxHum === undefined ||\n  combinedPayload.avgHum === undefined ||\n  combinedPayload.aggregationTimestamp === undefined ||\n  combinedPayload.ipfsHash === undefined ||\n  combinedPayload.x === undefined || // Check for x\n  combinedPayload.y === undefined // Check for y\n  ) {\n  node.error(\"Missing required parameters in the incoming message payload.\", msg);\n  return null; // Stop the flow if parameters are missing\n}\n\n// Prepare the EnvironmentalData struct for the contract call\nconst environmentalData = {\n    tempMax: combinedPayload.maxTemp,\n    tempMin: combinedPayload.minTemp,\n    tempAvg: combinedPayload.avgTemp,\n    humidMax: combinedPayload.maxHum,\n    humidMin: combinedPayload.minHum,\n    humidAvg: combinedPayload.avgHum,\n    x: combinedPayload.x,\n    y: combinedPayload.y,\n    timestamp: combinedPayload.aggregationTimestamp\n};\n\n// You need to provide an IoT ID. This should match an IoT ID assigned to a box\n// in your contract using the assignBoxToIoT function.\n// For testing, you can use a hardcoded value that corresponds to a box.\nconst iotId = \"dist2\"; // Replace with the actual IoT ID assigned to a box\n\n// Call the recordEnvironmentalData function with the IoT ID and the EnvironmentalData struct\nreturn contract.methods.recordEnvironmentalData(\n  iotId,\n  environmentalData\n).send({ from: account, gas: 5000000 }) // Adjust gas as needed\n  .then(receipt => {\n    msg.payload = receipt;\n    return msg;\n  })\n  .catch(err => {\n    node.error(err, msg);\n  });",
+        "func": "// Retrieve the file path from global context\nconst jsonPath = global.get('medecinJsonPath');\nconst fs = global.get('fs');\nconst Web3Class = global.get('Web3');\n\n// Read and parse contract data\nlet contractData;\ntry {\n  contractData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));\n} catch (err) {\n  node.error(\"Failed to read contract file: \" + err.message, msg);\n  return null;\n}\n\n// Extract required values\nconst abi = contractData.abi;\nconst contractAddress = contractData.networks['5777'].address;\n\n// Initialize Web3 instance\nconst web3 = new Web3Class('http://127.0.0.1:7545'); // Create instance here\n\n// Get accounts using the Web3 INSTANCE\nlet accounts;\ntry {\n  accounts = await web3.eth.getAccounts();\n} catch (err) {\n  node.error(\"Failed to get accounts: \" + err.message, msg);\n  return null;\n}\nconst account = accounts[0];\n\n// Initialize contract\nconst contract = new web3.eth.Contract(abi, contractAddress);\n\n// Validate incoming payload\nconst combinedPayload = msg.payload;\nconst requiredParams = [\n  'minTemp', 'maxTemp', 'avgTemp',\n  'minHum', 'maxHum', 'avgHum',\n  'aggregationTimestamp', 'ipfsHash', 'x', 'y'\n];\n\nif (!combinedPayload || requiredParams.some(param => combinedPayload[param] === undefined)) {\n  node.error(\"Missing required parameters in payload\", msg);\n  return null;\n}\n\n// Prepare contract call\nconst environmentalData = {\n  tempMax: combinedPayload.maxTemp,\n  tempMin: combinedPayload.minTemp,\n  tempAvg: combinedPayload.avgTemp,\n  humidMax: combinedPayload.maxHum,\n  humidMin: combinedPayload.minHum,\n  humidAvg: combinedPayload.avgHum,\n  x: combinedPayload.x,\n  y: combinedPayload.y,\n  timestamp: combinedPayload.aggregationTimestamp\n};\n\nconst iotId = \"dist2\"; // Hardcoded IoT ID\n\n// Execute contract method\ntry {\n  const receipt = await contract.methods.recordEnvironmentalData(\n    iotId,\n    environmentalData\n  ).send({ from: account, gas: 5000000 });\n  \n  msg.payload = {\n    transactionHash: receipt.transactionHash,\n    blockNumber: receipt.blockNumber,\n    status: receipt.status ? \"Success\" : \"Failed\"\n  };\n  return msg;\n} catch (err) {\n  node.error(\"Contract error: \" + err.message, msg);\n  msg.error = err;\n  return msg;\n}",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -428,7 +418,7 @@
         "type": "function",
         "z": "5a4242869b013df1",
         "name": "Pin Daily Aggregated JSON to IPFS",
-        "func": "const pinata = new pinataSDK('a7bdc267ed0265929e7c','d7be16a16154e47ad3117effeb405f20e9be6447806fabd8f104e19dae8c8d47');\n\nconst aggregatedJson = msg.payload;\n\nconst options = {\n    pinataMetadata: {\n        name: `daily_raw_iot_data_${aggregatedJson.aggregationTimestamp}`,\n        keyvalues: {\n            aggregationTimestamp: aggregatedJson.aggregationTimestamp,\n            dataPointsCount: aggregatedJson.dataPoints.length\n        }\n    },\n    pinataOptions: {\n        cidVersion: 0\n    }\n};\n\n// Pin the aggregated JSON data to IPFS\npinata.pinJSONToIPFS(aggregatedJson, options).then((result) => {\n    msg.payload = result; // The result includes the IpfsHash and other details\n    node.send([ msg, null ]); // Send success to the first output\n}).catch((err) => {\n    msg.payload = err; // Send the error to the payload\n    node.error(\"Error pinning daily raw data to Pinata:\", err);\n    node.send([ null, msg ]); // Send error to the second output\n});\n\n// No need to return msg here as we are handling outputs within the .then() and .catch()",
+        "func": "const apiKey = global.get(\"PINATA_API_KEY\");\nconst secretKey = global.get(\"PINATA_SECRET_KEY\");\n\nif (!apiKey || !secretKey) {\n    // If you see this, check that you restarted Node-RED and updated settings.js correctly.\n    node.error(\"Missing PINATA_API_KEY or PINATA_SECRET_KEY in functionGlobalContext.\");\n    return null;\n}\n\nconst pinata = new pinataSDK(apiKey, secretKey);\nconst aggregatedJson = msg.payload;\n\nconst options = {\n    pinataMetadata: {\n        name: `daily_raw_iot_data_${aggregatedJson.aggregationTimestamp}`,\n        keyvalues: {\n            aggregationTimestamp: aggregatedJson.aggregationTimestamp,\n            dataPointsCount: aggregatedJson.dataPoints.length\n        }\n    },\n    pinataOptions: {\n        cidVersion: 0\n    }\n};\n\n// Pin the aggregated JSON data to IPFS\npinata.pinJSONToIPFS(aggregatedJson, options).then((result) => {\n    msg.payload = result; // The result includes the IpfsHash and other details\n    node.send([ msg, null ]); // Send success to the first output\n}).catch((err) => {\n    msg.payload = err; // Send the error to the payload\n    node.error(\"Error pinning daily raw data to Pinata:\", err);\n    node.send([ null, msg ]); // Send error to the second output\n});\n\n// No need to return msg here as we are handling outputs within the .then() and .catch()",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
@@ -518,6 +508,250 @@
         "wires": [
             [
                 "db18886a550285c2"
+            ]
+        ]
+    },
+    {
+        "id": "e81fa2afcb306a06",
+        "type": "inject",
+        "z": "a1e6d8509d40be13",
+        "name": "Send IoT (5s)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "5",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 580,
+        "y": 240,
+        "wires": [
+            [
+                "8c4be6744ad9b75e"
+            ]
+        ]
+    },
+    {
+        "id": "8c4be6744ad9b75e",
+        "type": "function",
+        "z": "a1e6d8509d40be13",
+        "name": "Generate IoT data",
+        "func": "// Génère des valeurs aléatoires pour temperature et humidity,\n// et utilise des coordonnées fixes pour Guelmim, Maroc\nmsg.payload = {\n  temperature: Math.floor(Math.random() * 31) + 10, // 10-40°C\n  humidity: Math.floor(Math.random() * 51) + 30, // 30-80%\n  timestamp: Date.now(), // Add a timestamp\n  x: -10.07, // Fixed Longitude for Guelmim, Morocco\n  y: 28.99   // Fixed Latitude for Guelmim, Morocco\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 810,
+        "y": 240,
+        "wires": [
+            [
+                "30376861192ca730"
+            ]
+        ]
+    },
+    {
+        "id": "30376861192ca730",
+        "type": "function",
+        "z": "a1e6d8509d40be13",
+        "name": "Store Data for Daily Aggregation",
+        "func": "// Store the current data point in flow context for later aggregation\nlet dailyData = flow.get('dailyIoTData') || [];\ndailyData.push(msg.payload);\nflow.set('dailyIoTData', dailyData);\n\nreturn null; // No output from this node immediately",
+        "outputs": 0,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1080,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "8adad827a3d1a787",
+        "type": "inject",
+        "z": "a1e6d8509d40be13",
+        "name": "Trigger each 24 Hours",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 610,
+        "y": 500,
+        "wires": [
+            [
+                "888af312570821dd"
+            ]
+        ]
+    },
+    {
+        "id": "888af312570821dd",
+        "type": "function",
+        "z": "a1e6d8509d40be13",
+        "name": "Process Daily Data",
+        "func": "// Retrieve all stored daily data\nlet dailyData = flow.get('dailyIoTData') || [];\n\n// If no data, don't process\nif (dailyData.length === 0) {\n    node.warn(\"No data collected in the last 24 hours.\");\n    return null; // Stop the flow\n}\n\n// Separate temperature and humidity values for calculation\nlet tempValues = dailyData.map(data => data.temperature);\nlet humValues = dailyData.map(data => data.humidity);\n\n// Calculate min, max, and average for blockchain\nlet minTemp = Math.min(...tempValues);\nlet maxTemp = Math.max(...tempValues);\nlet avgTemp = tempValues.reduce((a, b) => a + b) / tempValues.length;\n\nlet minHum = Math.min(...humValues);\nlet maxHum = Math.max(...humValues);\nlet avgHum = humValues.reduce((a, b) => a + b) / humValues.length;\n\n// **MODIFICATION START**\n// Use the fixed coordinates for Guelmim directly\nlet fixedLongitude = -10.07; // Fixed Longitude for Guelmim, Morocco\nlet fixedLatitude = 28.99;   // Fixed Latitude for Guelmim, Morocco\n// **MODIFICATION END**\n\n// Create payload for blockchain (aggregated data)\nconst blockchainPayload = {\n    minTemp: Math.round(minTemp), // Round to integer for blockchain\n    maxTemp: Math.round(maxTemp), // Round to integer for blockchain\n    avgTemp: Math.round(avgTemp), // Round to integer for blockchain\n    minHum: Math.round(minHum),   // Round to integer for blockchain\n    maxHum: Math.round(maxHum),   // Round to integer for blockchain\n    avgHum: Math.round(avgHum),   // Round to integer for blockchain\n    aggregationTimestamp: Date.now(),\n    // **MODIFICATION START**\n    x: fixedLongitude.toString(), // Add fixed position X (convert to string as per your ABI)\n    y: fixedLatitude.toString()   // Add fixed position Y (convert to string as per your ABI)\n    // **MODIFICATION END**\n};\n\n// Create payload for Pinata (all raw data)\nconst pinataPayload = {\n    aggregationTimestamp: Date.now(),\n    dataPoints: dailyData // This will now include the fixed x and y for each raw data point\n};\n\n// Clear the daily data after processing\nflow.set('dailyIoTData', []);\n\n// Send messages to both outputs\n// Output 1 for Pinata, Output 2 for Blockchain\nreturn [\n    { payload: pinataPayload },\n    { payload: blockchainPayload }\n];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 600,
+        "wires": [
+            [
+                "944426641b9611ea"
+            ],
+            [
+                "fdd6a6548590dd59"
+            ]
+        ]
+    },
+    {
+        "id": "edc3e0ce5be2442d",
+        "type": "function",
+        "z": "a1e6d8509d40be13",
+        "name": "Appeler addDailyAggregatedData",
+        "func": "// Retrieve the file path from global context\nconst jsonPath = global.get('medecinJsonPath');\nconst fs = global.get('fs');\nconst Web3Class = global.get('Web3');\n\n// Read and parse contract data\nlet contractData;\ntry {\n  contractData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));\n} catch (err) {\n  node.error(\"Failed to read contract file: \" + err.message, msg);\n  return null;\n}\n\n// Extract required values\nconst abi = contractData.abi;\nconst contractAddress = contractData.networks['5777'].address;\n\n// Initialize Web3 instance\nconst web3 = new Web3Class('http://127.0.0.1:7545'); // Create instance here\n\n// Get accounts using the Web3 INSTANCE\nlet accounts;\ntry {\n  accounts = await web3.eth.getAccounts();\n} catch (err) {\n  node.error(\"Failed to get accounts: \" + err.message, msg);\n  return null;\n}\nconst account = accounts[0];\n\n// Initialize contract\nconst contract = new web3.eth.Contract(abi, contractAddress); // votre compte\n\n// The incoming message payload contains the combined data from previous nodes\nconst combinedPayload = msg.payload;\n\n// Check if all required parameters are present\nif (combinedPayload === undefined ||\n  combinedPayload.minTemp === undefined ||\n  combinedPayload.maxTemp === undefined ||\n  combinedPayload.avgTemp === undefined ||\n  combinedPayload.minHum === undefined ||\n  combinedPayload.maxHum === undefined ||\n  combinedPayload.avgHum === undefined ||\n  combinedPayload.aggregationTimestamp === undefined ||\n  combinedPayload.ipfsHash === undefined ||\n  combinedPayload.x === undefined || // Check for x\n  combinedPayload.y === undefined // Check for y\n  ) {\n  node.error(\"Missing required parameters in the incoming message payload.\", msg);\n  return null; // Stop the flow if parameters are missing\n}\n\n// Prepare the EnvironmentalData struct for the contract call\nconst environmentalData = {\n    tempMax: combinedPayload.maxTemp,\n    tempMin: combinedPayload.minTemp,\n    tempAvg: combinedPayload.avgTemp,\n    humidMax: combinedPayload.maxHum,\n    humidMin: combinedPayload.minHum,\n    humidAvg: combinedPayload.avgHum,\n    x: combinedPayload.x,\n    y: combinedPayload.y,\n    timestamp: combinedPayload.aggregationTimestamp\n};\n\n// You need to provide an IoT ID. This should match an IoT ID assigned to a box\n// in your contract using the assignBoxToIoT function.\n// For testing, you can use a hardcoded value that corresponds to a box.\nconst iotId = \"pharma1\"; // Replace with the actual IoT ID assigned to a box\n\n// Call the recordEnvironmentalData function with the IoT ID and the EnvironmentalData struct\nreturn contract.methods.recordEnvironmentalData(\n  iotId,\n  environmentalData\n).send({ from: account, gas: 5000000 }) // Adjust gas as needed\n  .then(receipt => {\n    msg.payload = receipt;\n    return msg;\n  })\n  .catch(err => {\n    node.error(err, msg);\n  });",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1280,
+        "y": 380,
+        "wires": [
+            [
+                "c786dcb8e83c602d"
+            ]
+        ]
+    },
+    {
+        "id": "c786dcb8e83c602d",
+        "type": "debug",
+        "z": "a1e6d8509d40be13",
+        "name": "Daily Aggregated Blockchain Résultat",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1650,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "944426641b9611ea",
+        "type": "function",
+        "z": "a1e6d8509d40be13",
+        "name": "Pin Daily Aggregated JSON to IPFS",
+        "func": "const apiKey = global.get(\"PINATA_API_KEY\");\nconst secretKey = global.get(\"PINATA_SECRET_KEY\");\n\nif (!apiKey || !secretKey) {\n    // If you see this, check that you restarted Node-RED and updated settings.js correctly.\n    node.error(\"Missing PINATA_API_KEY or PINATA_SECRET_KEY in functionGlobalContext.\");\n    return null;\n}\n\nconst pinata = new pinataSDK(apiKey, secretKey);\n\nconst aggregatedJson = msg.payload;\n\nconst options = {\n    pinataMetadata: {\n        name: `daily_raw_iot_data_${aggregatedJson.aggregationTimestamp}`,\n        keyvalues: {\n            aggregationTimestamp: aggregatedJson.aggregationTimestamp,\n            dataPointsCount: aggregatedJson.dataPoints.length\n        }\n    },\n    pinataOptions: {\n        cidVersion: 0\n    }\n};\n\n// Pin the aggregated JSON data to IPFS\npinata.pinJSONToIPFS(aggregatedJson, options).then((result) => {\n    msg.payload = result; // The result includes the IpfsHash and other details\n    node.send([ msg, null ]); // Send success to the first output\n}).catch((err) => {\n    msg.payload = err; // Send the error to the payload\n    node.error(\"Error pinning daily raw data to Pinata:\", err);\n    node.send([ null, msg ]); // Send error to the second output\n});\n\n// No need to return msg here as we are handling outputs within the .then() and .catch()",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [
+            {
+                "var": "pinataSDK",
+                "module": "@pinata/sdk"
+            }
+        ],
+        "x": 920,
+        "y": 540,
+        "wires": [
+            [
+                "eb7b597a8d425f26",
+                "74755818b4ee833b",
+                "bd1aa32bc2db70d4"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "eb7b597a8d425f26",
+        "type": "debug",
+        "z": "a1e6d8509d40be13",
+        "name": "Daily Pinata Success",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1600,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "74755818b4ee833b",
+        "type": "debug",
+        "z": "a1e6d8509d40be13",
+        "name": "Daily Pinata IPFS Hash",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload.IpfsHash",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1610,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "fdd6a6548590dd59",
+        "type": "function",
+        "z": "a1e6d8509d40be13",
+        "name": "Store Blockchain Data",
+        "func": "// Store the blockchain payload in flow context\nflow.set('blockchainPayload', msg.payload);\n\n// Do not send anything from this node yet\nreturn null;\n",
+        "outputs": 0,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "bd1aa32bc2db70d4",
+        "type": "function",
+        "z": "a1e6d8509d40be13",
+        "name": "Combine Data and IPFS Hash",
+        "func": "// Retrieve the stored blockchain payload\nlet blockchainPayload = flow.get('blockchainPayload');\n\n// Check if the blockchain payload exists\nif (!blockchainPayload) {\n    node.error(\"Blockchain payload not found in flow context.\", msg);\n    return null; // Stop the flow if blockchain data is missing\n}\n\n// The incoming message payload from the previous node (Pinata) contains the IPFS hash\nconst ipfsHash = msg.payload.IpfsHash;\n\n// Check if the IPFS hash is present\nif (!ipfsHash) {\n     node.error(\"IPFS hash not found in the incoming message payload.\", msg);\n     return null; // Stop the flow if IPFS hash is missing\n}\n\n// Combine the blockchain data with the IPFS hash and position data\nconst combinedPayload = {\n    minTemp: blockchainPayload.minTemp,\n    maxTemp: blockchainPayload.maxTemp,\n    avgTemp: blockchainPayload.avgTemp,\n    minHum: blockchainPayload.minHum,\n    maxHum: blockchainPayload.maxHum,\n    avgHum: blockchainPayload.avgHum,\n    aggregationTimestamp: blockchainPayload.aggregationTimestamp,\n    ipfsHash: ipfsHash, // Add the IPFS hash here\n    x: blockchainPayload.x, // Add position X\n    y: blockchainPayload.y  // Add position Y\n};\n\n// Set the combined payload as the message payload for the next node\nmsg.payload = combinedPayload;\n\n// Clear the stored blockchain data from flow context (optional but good practice)\nflow.set('blockchainPayload', null);\n\n// Send the combined message to the next node\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1250,
+        "y": 460,
+        "wires": [
+            [
+                "edc3e0ce5be2442d"
             ]
         ]
     }

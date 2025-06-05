@@ -159,22 +159,37 @@ Ensure the following are installed:
 
 1. **Clone and Organize**
    ```bash
-   # Create a parent directory
-   mkdir pharmachain
-   cd pharmachain
-
-   # Clone both repositories
-   git clone <MEDPROJECT-Web-repo-url>
-   git clone <MEDPROJECT-Mobile-repo-url>
+   # Clone the repository
+   git clone https://github.com/ayoubharati/medProject/
+   cd medProject
    ```
 
-2. **Environment Configuration**
-   - Create `.env` files in both projects:
+2. **Project Structure Navigation**
+   - For Web Platform:
+     ```bash
+     cd MEDPROJECT-Web
+     ```
+   - For Mobile App:
+     ```bash
+     cd MEDPROJECT-Mobile
+     ```
+   - For AI Verification Module:
+     ```bash
+     cd Projet_AMM
+     ```
+   - For Node-RED Integration:
+     ```bash
+     cd MEDPROJECT-Web/nodered
+     ```
+
+3. **Environment Configuration**
+   - Create `.env` file in MEDPROJECT-Web folder:
      ```bash
      # MEDPROJECT-Web/.env
-     REACT_APP_CONTRACT_ADDRESS=<your-contract-address>
-     REACT_APP_NETWORK_ID=<your-network-id>
-     REACT_APP_RPC_URL=<your-rpc-url>
+      VITE_PINATA_JWT=<Your_PINATA_JWT>
+      VITE_GATEWAY_URL=<Your_GATEWAY_URL>
+      VITE_PINATA_API_KEY=<Your_PINATA_API_KEY>
+      VITE_PINATA_SECRET_KEY=<PINATA_SECRET_KEY>
      ```
 
 ### Web Platform Setup
@@ -204,13 +219,7 @@ Ensure the following are installed:
    truffle migrate --reset
    ```
 
-3. **Export Contract ABI**
-   ```bash
-   # Run the export script
-   node scripts/exportABI.js
-   ```
-
-4. **Start Development Server**
+3. **Start Development Server**
    ```bash
    npm run dev
    ```
@@ -221,7 +230,6 @@ Ensure the following are installed:
    ```bash
    cd MEDPROJECT-Mobile
    npm install
-   npm install @expo/vector-icons @react-native-async-storage/async-storage @react-navigation/native expo-blur expo-constants expo-font expo-haptics expo-image expo-image-picker expo-linear-gradient expo-linking expo-location expo-splash-screen expo-status-bar expo-symbols expo-system-ui expo-web-browser lucide-react-native nativewind zustand --legacy-peer-deps
    ```
 
 2. **Configure Environment**
@@ -247,6 +255,10 @@ Ensure the following are installed:
 
 1. **Start Node-RED**
    ```bash
+   # Navigate to Node-RED directory
+   cd MEDPROJECT-Web/node-red
+   
+   # Start Node-RED
    node-red
    ```
 

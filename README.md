@@ -28,7 +28,7 @@ PharmaChain creates digital twins for each pharmaceutical product, enabling life
 ## Architecture
 ![Architecture Diagram](https://github.com/user-attachments/assets/a2fb4e47-ae31-4c26-b673-3ce215c94efb)
 
-PharmaChain’s modular architecture separates presentation, business logic, middleware, and storage layers for maintainability and scalability. Key components include:
+PharmaChain's modular architecture separates presentation, business logic, middleware, and storage layers for maintainability and scalability. Key components include:
 
 ### Frontend
 - **Web Platform:** Built with **React.js**, **Vite**, and **Material Tailwind**. Integrates **MetaMask** via **Web3.js** for secure blockchain transactions.
@@ -71,7 +71,7 @@ PharmaChain leverages **Ethereum** and **IPFS** to ensure secure, scalable, and 
 
 ## AI Module
 
-The AI module enhances PharmaChain’s security and reliability through advanced machine learning capabilities.
+The AI module enhances PharmaChain's security and reliability through advanced machine learning capabilities.
 
 ### Certificate Validation
 
@@ -105,61 +105,198 @@ Ensure the following are installed:
 - A running **Ethereum blockchain** (local or testnet) and **IPFS node**
 
 ## Installation and Setup
-Place both `MEDPROJECT-Web` and `MEDPROJECT-Mobile` directories in the same parent folder.
+
+### Prerequisites Installation
+1. **Node.js and npm**
+   - Download and install Node.js (v14.x or higher) from [nodejs.org](https://nodejs.org)
+   - Verify installation:
+     ```bash
+     node --version
+     npm --version
+     ```
+
+2. **Truffle Suite**
+   - Install Truffle globally:
+     ```bash
+     npm install -g truffle
+     ```
+   - Verify installation:
+     ```bash
+     truffle version
+     ```
+
+3. **MetaMask**
+   - Install MetaMask browser extension from [metamask.io](https://metamask.io)
+   - Create a new wallet or import existing one
+   - Add a test network (e.g., Sepolia) for development
+
+4. **Ganache**
+   - Download and install Ganache from [trufflesuite.com/ganache](https://trufflesuite.com/ganache)
+   - Create a new workspace
+   - Note down the RPC URL (usually `http://127.0.0.1:7545`)
+
+5. **Node-RED**
+   - Install Node-RED globally:
+     ```bash
+     npm install -g node-red
+     ```
+   - Verify installation:
+     ```bash
+     node-red --version
+     ```
+
+6. **Expo CLI**
+   - Install Expo CLI globally:
+     ```bash
+     npm install -g expo-cli
+     ```
+   - Verify installation:
+     ```bash
+     expo --version
+     ```
+
+### Project Setup
+
+1. **Clone and Organize**
+   ```bash
+   # Create a parent directory
+   mkdir pharmachain
+   cd pharmachain
+
+   # Clone both repositories
+   git clone <MEDPROJECT-Web-repo-url>
+   git clone <MEDPROJECT-Mobile-repo-url>
+   ```
+
+2. **Environment Configuration**
+   - Create `.env` files in both projects:
+     ```bash
+     # MEDPROJECT-Web/.env
+     REACT_APP_CONTRACT_ADDRESS=<your-contract-address>
+     REACT_APP_NETWORK_ID=<your-network-id>
+     REACT_APP_RPC_URL=<your-rpc-url>
+     ```
 
 ### Web Platform Setup
-1. Navigate to the web project directory:
+
+1. **Install Dependencies**
    ```bash
    cd MEDPROJECT-Web
-   ```
-2. Install dependencies:
-   ```bash
+   npm install
    npm install lucide-react @material-tailwind/react web3
    ```
-3. Run the development server:
+
+2. **Smart Contract Deployment**
+   ```bash
+   # Configure truffle-config.js with your network settings
+   # Example configuration:
+   module.exports = {
+     networks: {
+       development: {
+         host: "127.0.0.1",
+         port: 7545,
+         network_id: "*"
+       }
+     }
+   }
+
+   # Deploy contracts
+   truffle migrate --reset
+   ```
+
+3. **Export Contract ABI**
+   ```bash
+   # Run the export script
+   node scripts/exportABI.js
+   ```
+
+4. **Start Development Server**
    ```bash
    npm run dev
    ```
-4. Deploy smart contracts:
-   Ensure Truffle is configured with your Ethereum network (e.g., Ganache or testnet).
-   ```bash
-   truffle migrate
-   ```
-5. Export smart contract ABI:
-   ```bash
-   node scripts/exportABI.js
-   ```
-   This script copies the ABI to the user project.
-6. Access the web interface:
-   Open `http://localhost:5173` (or the port specified by Vite) in your browser.
 
 ### Mobile App Setup
-1. Navigate to the mobile project directory:
+
+1. **Install Dependencies**
    ```bash
    cd MEDPROJECT-Mobile
-   ```
-2. Install dependencies:
-   ```bash
+   npm install
    npm install @expo/vector-icons @react-native-async-storage/async-storage @react-navigation/native expo-blur expo-constants expo-font expo-haptics expo-image expo-image-picker expo-linear-gradient expo-linking expo-location expo-splash-screen expo-status-bar expo-symbols expo-system-ui expo-web-browser lucide-react-native nativewind zustand --legacy-peer-deps
    ```
-3. Start the mobile app:
+
+2. **Configure Environment**
+   - Create `app.config.js`:
+     ```javascript
+     export default {
+       expo: {
+         name: "PharmaChain",
+         slug: "pharmachain",
+         version: "1.0.0",
+         orientation: "portrait",
+         // Add other configuration as needed
+       }
+     };
+     ```
+
+3. **Start Mobile App**
    ```bash
    npx expo start
    ```
-4. Access the mobile app:
-   Use the Expo Go app on your iOS/Android device or an emulator to scan the QR code generated by Expo.
 
-### IoT Integration with Node-RED
-1. Install Node-RED:
-   Follow the official [Node-RED installation guide](https://nodered.org/docs/getting-started/).
-2. Start Node-RED:
+### IoT Integration Setup
+
+1. **Start Node-RED**
    ```bash
    node-red
    ```
-3. Configure IoT data flow:
-   - Create a flow to simulate IoT sensor data (temperature, humidity, location) every 1 minute.
-   - Connect the flow to the Ethereum blockchain and IPFS for data storage.
-<img width="917" alt="IoT flow" src="https://github.com/user-attachments/assets/f8aef8b2-a9a4-4a23-9691-2c0bc6531fa9" />
+
+2. **Configure IoT Flow**
+   - Open Node-RED in browser (http://localhost:1880)
+   - Import the provided flow configuration
+   - Configure the following nodes:
+     - IoT Sensor Simulator
+     - Ethereum Connection
+     - IPFS Upload
+     - Data Processing
+
+3. **Test IoT Integration**
+   - Verify sensor data generation
+   - Check blockchain transactions
+   - Monitor IPFS uploads
+
+### Verification Steps
+
+1. **Web Platform**
+   - Open http://localhost:5173
+   - Connect MetaMask
+   - Verify contract interaction
+   - Test batch creation
+
+2. **Mobile App**
+   - Install Expo Go on your device
+   - Scan QR code from terminal
+   - Test product verification
+   - Check environmental data
+
+3. **IoT Integration**
+   - Monitor Node-RED dashboard
+   - Verify data flow
+   - Check blockchain records
+   - Validate IPFS storage
+
+### Troubleshooting
+
+1. **Common Issues**
+   - MetaMask Connection: Ensure correct network and account
+   - Contract Deployment: Check Ganache connection
+   - Mobile App: Clear cache and restart Expo
+   - IoT Data: Verify Node-RED flow configuration
+
+2. **Support**
+   - Check console logs for errors
+   - Verify network connectivity
+   - Ensure all services are running
+   - Check environment variables
 
 ## Usage
 PharmaChain supports four main actors:
@@ -218,4 +355,5 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## Contact
 - **Team Members**: Amina Miskar, Ayoub Harati, Zineb Elhalla, Aya El Abidi
 - **Institution**: National School of Applied Sciences El Jadida (ENSAJ)
+- **Supervisor**: Prof. Mohamed Hanine
 - **Supervisor**: Prof. Mohamed Hanine
